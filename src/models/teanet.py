@@ -45,6 +45,7 @@ class textEncoder(nn.Module):
         self.pos_embed = nn.Parameter(torch.randn(batch_size, self.n + 1, dim))
 
         # layer normalization in the text encoder of the model
+        # you add and normalize
         self.layernorm = nn.LayerNorm(dim)
 
         # the feed forward neural network
