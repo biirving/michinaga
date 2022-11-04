@@ -1,5 +1,5 @@
 # michinaga
-Messing with transformers, in the context of wealth accumulation. Thus the manner in which the Fujiwara would have seen their potential.
+Messing with transformers, in the context of wealth accumulation. The manner in which the Fujiwara would have seen their potential.
 
 ```
 @article{Expert Systems with Applications,
