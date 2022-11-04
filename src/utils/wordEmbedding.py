@@ -47,18 +47,22 @@ class wordEmbedding():
         self.embedding.embed(sentence)
         # if the mode is maximum, we process a pointwise maximum for the input vectors
         # so we have to return a vector where each value is the max of each column
-        if(mode == 'max'):
-            # set base to the initial tensor to be processed
-            base = sentence[0]
+        if(self.mode == 'max'):
+            base = None
             for token in sentence:
-                base = torch.cat((base, token), 0)
+                print('token', token.embedding)
+                # set base to the initial tensor to be processed
+                if(base is None):
+                    base = token.embedding
+                else: 
+                    base = torch.stack((base, token.embedding))
             # then we take the "columwise" maximum
             base_t = torch.transpose(base, 0, 1)
             maxed = []
             for tensor in base_t:
                 maxed.append(torch.max(tensor))
             return torch.tensor(maxed)
-        elif(mode == 'min'):
+        elif(self.mode == 'min'):
             for token in sentence:
                 base = torch.cat((base, token), 0)
             # then we take the "columwise" maximum
@@ -67,7 +71,7 @@ class wordEmbedding():
             for tensor in base_t:
                 maxed.append(torch.min(tensor))
             return torch.tensor(maxed)
-        elif(mode == 'average'):
+        elif(self.mode == 'average'):
             count = 0 
             for token in sentence:
                 count += 1
