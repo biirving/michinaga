@@ -38,10 +38,6 @@ class classicAttention(nn.Module):
         v_mat = rearrange(self.k(input), 'b (h d) -> b h d', h = self.num_heads)
         k_mat = rearrange(self.v(input), 'b (h d) -> b h d', h = self.num_heads)
 
-        print(q_mat.shape)
-        print(v_mat.shape)
-        print(k_mat.shape)
-
         # Softmax step, calculated for each row of each head
         inter = self.softmax(torch.matmul(q_mat, torch.transpose(k_mat, 1, 2)) / (math.sqrt(self.Dh) * self.num_heads))
 

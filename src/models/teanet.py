@@ -72,4 +72,3 @@ class teanet(nn.Module):
         super().__init__()
         self.textEncoder = textEncoder(num_heads, dim, self.n, batch_size)
         self.lstm = nn.LSTM(input_size = dim + 15, hidden_size = dim + 15)
-

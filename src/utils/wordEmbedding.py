@@ -4,7 +4,7 @@ import torch
 
 
 """
-wordEmbedding
+wordEmbedding (Should it be trained over time)
 
 A class used to process our Tweet inputs. Extensible to many kinds of embeddings, a simple
 shell built on top of the flair library. 

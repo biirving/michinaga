@@ -12,5 +12,3 @@ import math
 import PIL
 import sys, os 
 
-
-
