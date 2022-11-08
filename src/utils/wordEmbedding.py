@@ -1,4 +1,4 @@
-from flair.embeddings import WordEmbeddings
+from flair.embeddings import WordEmbeddings, StackedEmbeddings, FlairEmbeddings
 from flair.data import Sentence
 import torch
 
@@ -33,8 +33,16 @@ Args:
         The input sentence
 """
 class wordEmbedding():
-    def __init__(self, embedding:str, mode:str):
-        self.embedding = WordEmbeddings(embedding)
+    def __init__(self, embedding:str, mode:str, stacked:bool):
+        self.stacked = stacked
+        if(self.stacked):
+            self.embeddings = StackedEmbeddings([
+                                                    WordEmbeddings(embedding),
+                                                    FlairEmbeddings('news-foward'),
+                                                    FlairEmbeddings('news-backward'),
+                                                    ])
+        else:
+            self.embedding = WordEmbeddings(embedding)
         self.mode = mode
 
     """
@@ -50,7 +58,6 @@ class wordEmbedding():
         if(self.mode == 'max'):
             base = None
             for token in sentence:
-                print('token', token.embedding)
                 # set base to the initial tensor to be processed
                 if(base is None):
                     base = token.embedding

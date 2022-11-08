@@ -61,14 +61,17 @@ class textEncoder(nn.Module):
         input += self.pos_embed()
         inter = self.multiHeadAttention.forward(input)
         inter = self.layernorm(inter)
-        output = self.FFN(inter)
-        # return the output for the LSTM input
+        output = self.FFN(inter + input)
         return self.attention.forward(output)
 
 
 # eventually package structure will be fixed
 class teanet(nn.Module):
-    def __init__(self, num_heads, dim, height, width, batch_size) -> None:
+    def __init__(self, num_heads, dim, batch_size) -> None:
         super().__init__()
-        self.textEncoder = textEncoder(num_heads, dim, self.n, batch_size)
+        self.textEncoder = textEncoder(num_heads, dim, batch_size)
         self.lstm = nn.LSTM(input_size = dim + 15, hidden_size = dim + 15)
+
+
+# working out functionality of the text encoder
+
