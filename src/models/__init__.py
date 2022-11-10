@@ -1,1 +1,1 @@
-from .teanet import teanet
+from .teanet import teanet, textEncoder

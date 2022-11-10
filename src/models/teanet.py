@@ -25,7 +25,8 @@ The sell mechnanism
 """
 
 from torch import nn, tensor
-from michinaga.src import classicAttention
+import torch
+from michinaga.src.utils import classicAttention
 
 """
 TEANET:
@@ -47,7 +48,7 @@ class textEncoder(nn.Module):
         self.layernorm = nn.LayerNorm(dim)
 
         # the feed forward neural network
-        self.FFN = nn.Sequential(nn.Linear(dim), nn.ReLU(), nn.Linear(dim))
+        self.FFN = nn.Sequential(nn.Linear(dim, dim), nn.ReLU(), nn.Linear(dim, dim))
 
         # this is followed by another attention layer
         # not multihead
@@ -58,10 +59,10 @@ class textEncoder(nn.Module):
     After the forward process executes, then we feed the remainder into the LSTM.
     """
     def forward(self, input):
-        input += self.pos_embed()
+        input += self.pos_embed
         inter = self.multiHeadAttention.forward(input)
-        inter = self.layernorm(inter)
-        output = self.FFN(inter + input)
+        inter = self.layernorm(inter + input)
+        output = self.FFN(inter)
         return self.attention.forward(output)
 
 

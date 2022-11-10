@@ -32,10 +32,12 @@ Args:
     input: 
         The input sentence
 """
+
 class wordEmbedding():
     def __init__(self, embedding:str, mode:str, stacked:bool):
         self.stacked = stacked
         if(self.stacked):
+            # are these embeddings depreciated? what is going on
             self.embeddings = StackedEmbeddings([
                                                     WordEmbeddings(embedding),
                                                     FlairEmbeddings('news-foward'),
@@ -44,6 +46,8 @@ class wordEmbedding():
         else:
             self.embedding = WordEmbeddings(embedding)
         self.mode = mode
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
     """
     embed
@@ -51,6 +55,7 @@ class wordEmbedding():
     """
     def embed(self, input):
         base = torch.zeros(100)
+        base = base.to(self.device)
         sentence = Sentence(input)
         self.embedding.embed(sentence)
         # if the mode is maximum, we process a pointwise maximum for the input vectors
@@ -70,19 +75,26 @@ class wordEmbedding():
                 maxed.append(torch.max(tensor))
             return torch.tensor(maxed)
         elif(self.mode == 'min'):
+            base = None
             for token in sentence:
-                base = torch.cat((base, token), 0)
+                # set base to the initial tensor to be processed
+                if(base is None):
+                    base = token.embedding
+                else: 
+                    base = torch.stack((base, token.embedding))
             # then we take the "columwise" maximum
             base_t = torch.transpose(base, 0, 1)
-            maxed = []
+            minned = []
             for tensor in base_t:
-                maxed.append(torch.min(tensor))
-            return torch.tensor(maxed)
+                minned.append(torch.min(tensor))
+            return torch.tensor(minned)
         elif(self.mode == 'average'):
             count = 0 
             for token in sentence:
                 count += 1
-                base += token
+                toadd = token.embedding
+                base += toadd.to(self.device)
             return base / count
         else: 
             raise ValueError("Unsupported argument. Please use an invalid embed mode.")
+
