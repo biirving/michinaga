@@ -36,20 +36,15 @@ An implementation of a model meant to measure stocks, based around the TEANET mo
 class textEncoder(nn.Module):
     def __init__(self, num_heads, dim, batch_size) -> None:
         super().__init__()
-
         # the multihead attention mechanism
         self.multiHeadAttention = classicAttention(num_heads, dim)
-
         # the positional embedding will be initialized as a random parameter (will be updated with the backward call)
         self.pos_embed = nn.Parameter(torch.randn(batch_size, dim))
-
         # layer normalization in the text encoder of the model
         # you add and normalize
         self.layernorm = nn.LayerNorm(dim)
-
         # the feed forward neural network
         self.FFN = nn.Sequential(nn.Linear(dim, dim), nn.ReLU(), nn.Linear(dim, dim))
-
         # this is followed by another attention layer
         # not multihead
         self.attention = classicAttention(1, dim)
@@ -66,13 +61,58 @@ class textEncoder(nn.Module):
         return self.attention.forward(output)
 
 
-# eventually package structure will be fixed
+# I am going to implement first for a batch size of 1
+
+"""
+teanet 
+long range dependencies for trend and price analysis
+
+args:
+    - num_heads
+        The number of attention heads for the text encoder
+    - dim
+        The dimension of the message embeddings (what will they be projected into)
+    - batch size 
+        How many inputs are being processed at once
+    - k (will this be a dynamic value?)
+        How many messages will be considered for each trading day
+    - lag 
+        How many prior trading days are being considered with each input
+    - tweets 
+        Tweet embeddings for all of the trading days in the lag period
+    - prices
+        normalized prices for all of the trading days in the lag period
+"""
+
 class teanet(nn.Module):
-    def __init__(self, num_heads, dim, batch_size) -> None:
+    def __init__(self, num_heads, dim, batch_size, k, lag, tweets, prices) -> None:
         super().__init__()
+        self.tweets = tweets
+        self.prices = prices
+        self.k = k
+        self.u = nn.Sequential(nn.Linear(1, dim), nn.Tanh(), nn.Linear(dim, dim), nn.Softmax(dim))
+        self.lag = lag
+        # I am going to begin with batch size of 1. 
+        # so, for the text encoder, I am going to process a single input at a time
+        self.batch_size = lag
+
         self.textEncoder = textEncoder(num_heads, dim, batch_size)
-        self.lstm = nn.LSTM(input_size = dim + 15, hidden_size = dim + 15)
+        self.lstm = nn.LSTM(input_size = dim, hidden_size = lag)
+    
+    def forward(self):
+        counter = 0
+        # each 'tweet' in this for each loop represents all of the tweets for the TDth trading day
+        for tweet in tweets:
+            m = self.textEncoder.forward(self.tweets)
+            output = self.u(m)
+            tooAdd = torch.cat(output, prices[counter])
+            if(counter == 0):
+                lstm_in = tooAdd
+            else:
+                lstm_in = torch.stack(lstm_in, tooAdd)
+            counter += 1
+        temporal_in = self.lstm(lstm_in)
 
+        return temporal_in
 
-# working out functionality of the text encoder
 
