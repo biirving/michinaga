@@ -39,7 +39,6 @@ class textEncoder(nn.Module):
         # the multihead attention mechanism
         self.multiHeadAttention = classicAttention(num_heads, dim)
         # the positional embedding will be initialized as a random parameter (will be updated with the backward call)
-        self.pos_embed = nn.Parameter(torch.randn(batch_size, dim))
         # layer normalization in the text encoder of the model
         # you add and normalize
         self.layernorm = nn.LayerNorm(dim)
@@ -54,7 +53,6 @@ class textEncoder(nn.Module):
     After the forward process executes, then we feed the remainder into the LSTM.
     """
     def forward(self, input):
-        input += self.pos_embed
         inter = self.multiHeadAttention.forward(input)
         inter = self.layernorm(inter + input)
         output = self.FFN(inter)
@@ -83,14 +81,15 @@ args:
     - prices
         normalized prices for all of the trading days in the lag period
 """
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class teanet(nn.Module):
-    def __init__(self, num_heads, dim, batch_size, k, lag, tweets, prices) -> None:
+    def __init__(self, num_heads, dim, batch_size, k, lag) -> None:
         super().__init__()
-        self.tweets = tweets
-        self.prices = prices
+        self.dim = dim
         self.k = k
-        self.u = nn.Sequential(nn.Linear(1, dim), nn.Tanh(), nn.Linear(dim, dim), nn.Softmax(dim))
+        self.u = nn.Sequential(nn.Linear(k, dim), nn.Tanh(), nn.Linear(dim, dim), nn.Softmax(dim))
+        self.pos_embed = nn.Parameter(torch.randn(lag, k, dim))
         self.lag = lag
         # I am going to begin with batch size of 1. 
         # so, for the text encoder, I am going to process a single input at a time
@@ -98,21 +97,31 @@ class teanet(nn.Module):
 
         self.textEncoder = textEncoder(num_heads, dim, batch_size)
         self.lstm = nn.LSTM(input_size = dim, hidden_size = lag)
-    
-    def forward(self):
+    def forward(self, input):
         counter = 0
+        input[0] += self.pos_embed
         # each 'tweet' in this for each loop represents all of the tweets for the TDth trading day
-        for tweet in tweets:
-            m = self.textEncoder.forward(self.tweets)
+        for tweet in input[0]:
+            print('tweet shape', tweet.shape)
+            m = self.textEncoder.forward(tweet)
+            print('m', m.shape)
+            # is this an exponential projection of some kind? Or a linear one?
+            test1 = nn.Linear(self.dim, 1).to(device)
+            inter = test1(m)
+            print(inter.shape)
+            test2 = nn.Tanh().to(device)
+            inter = test2(inter)
+            print(inter.shape)
+            test3 = nn.Linear(self.k, self.dim).to(device)
+            inter = test3(inter)
+            print(inter.shape)
             output = self.u(m)
-            tooAdd = torch.cat(output, prices[counter])
+            tooAdd = torch.cat(output, input[1][counter])
             if(counter == 0):
                 lstm_in = tooAdd
             else:
                 lstm_in = torch.stack(lstm_in, tooAdd)
             counter += 1
-        temporal_in = self.lstm(lstm_in)
-
-        return temporal_in
+        return(lstm_in)
 
 
