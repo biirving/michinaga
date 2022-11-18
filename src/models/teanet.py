@@ -116,6 +116,9 @@ class teanet(nn.Module):
         counter = 0
         input[0] += self.pos_embed
         # each 'tweet' in this for each loop represents all of the tweets for the TDth trading day
+        # should not do this with a forloop
+        # should be done in one matrix multiplication
+        # but for that, we need to change text encoder 
         for tweet in input[0]:
             # so each forward pass is processing a 'batch' of tweets
             # one more 'zoom' out? 
