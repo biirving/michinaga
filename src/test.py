@@ -4,8 +4,12 @@ from michinaga.src import wordEmbedding, teanet
 import torch
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-file = open(r'C:\Users\Benjamin\Desktop\ml\stocknet-dataset\price\preprocessed\AAPL.txt', 'r')
+from sys import platform
+if platform == "darwin":
+    file = open(r'/Users/benjaminirving/Desktop/mlWalk/michinaga/src/data/prices/AAPL.txt', 'r')
+elif platform == "win64":
+    file = open(r'C:\Users\Benjamin\Desktop\ml\stocknet-dataset\price\preprocessed\AAPL.txt', 'r')
+    
 price = file.readlines()
 
 prices = price[918:923]
@@ -22,10 +26,17 @@ tweet_inputs = torch.tensor([])
 # we need to generalize this to create the dataset
 # also, for each 'example', we need to specify if its positive or negative example (comparing first and last price days?)
 for y in range(6, 11):
-    if(y < 10):
-        file = open(r'C:\Users\Benjamin\Desktop\ml\stocknet-dataset\tweet\preprocessed\AAPL\2014-01-0' + str(y), 'r')
-    else:
-        file = open(r'C:\Users\Benjamin\Desktop\ml\stocknet-dataset\tweet\preprocessed\AAPL\2014-01-' + str(y), 'r')
+    if platform == "win64":
+        if(y < 10):
+            file = open(r'C:\Users\Benjamin\Desktop\ml\stocknet-dataset\tweet\preprocessed\AAPL\2014-01-0' + str(y), 'r')
+        else:
+            file = open(r'C:\Users\Benjamin\Desktop\ml\stocknet-dataset\tweet\preprocessed\AAPL\2014-01-' + str(y), 'r')
+    elif platform == "darwin":
+        if(y < 10):
+            file = open(r'/Users/benjaminirving/Desktop/mlWalk/michinaga/src/data/preprocessed/AAPL/2014-01-0' + str(y), 'r')
+        else:
+            file = open(r'/Users/benjaminirving/Desktop/mlWalk/michinaga/src/data/preprocessed/AAPL/2014-01-' + str(y), 'r')
+
     text = file.readlines()
     for t in range(4):
         tweet_dict = json.loads(text[t])

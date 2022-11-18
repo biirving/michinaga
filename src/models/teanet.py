@@ -94,9 +94,6 @@ class teanet(nn.Module):
         self.w_u = nn.Parameter(torch.randn(self.dim, self.dim))
         self.w_m = nn.Parameter(torch.randn(self.dim))
         self.textSoftmax = nn.Softmax(dim = 0)
-
-
-        
         self.num_classes = num_classes
 
         # is this processed with a class token, to capture the information of the input?
@@ -110,7 +107,7 @@ class teanet(nn.Module):
         self.batch_size = lag
 
         self.textEncoder = textEncoder(num_heads, dim, batch_size)
-        self.lstm = nn.LSTM(input_size = dim, hidden_size = lag)
+        self.lstm = nn.LSTM(input_size = 9, hidden_size = 5)
 
     def forward(self, input):
         counter = 0
@@ -127,13 +124,17 @@ class teanet(nn.Module):
             # the tanh operation should be computed separately, because W_m is stored 
             # as a parameter
             inter = self.textSoftmax(torch.matmul(torch.transpose(self.w_u, 0, 1), torch.tanh(self.w_m)))
-            output = torch.matmul(m, inter.to(device))
-            tooAdd = torch.cat((output.to(device), torch.tensor(input[1][counter]).to(device))).to(device)
+            output = torch.matmul(m, inter)
+            tooAdd = torch.cat((output, input[1][counter]))
             if(counter == 0):
                 lstm_in = tooAdd.view(1, 9)
             else:
                 lstm_in = torch.cat((lstm_in, tooAdd.view(1, 9)), 0)
             counter += 1
+        
+        # process the output through an lstm
+        out = self.lstm(lstm_in) 
+        print('lstm out', out)
         return(lstm_in)
 
 
