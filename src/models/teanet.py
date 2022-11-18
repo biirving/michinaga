@@ -84,43 +84,52 @@ args:
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class teanet(nn.Module):
-    def __init__(self, num_heads, dim, batch_size, k, lag) -> None:
+    def __init__(self, num_heads, dim, num_classes, batch_size, k, lag) -> None:
         super().__init__()
         self.dim = dim
         self.k = k
-        self.u = nn.Sequential(nn.Linear(k, dim), nn.Tanh(), nn.Linear(dim, dim), nn.Softmax(dim))
+
+        # instead of the sequential shite
+        #self.u = nn.Sequential(nn.Linear(k, dim), nn.Tanh(), nn.Linear(dim, dim), nn.Softmax(dim))
+        self.w_u = nn.Parameter(torch.randn(self.dim, self.dim))
+        self.w_m = nn.Parameter(torch.randn(self.dim))
+        self.textSoftmax = nn.Softmax(dim = 0)
+
+
+        
+        self.num_classes = num_classes
+
+        # is this processed with a class token, to capture the information of the input?
+        #self.classtoken = nn.Parameter(torch.randn())
+
         self.pos_embed = nn.Parameter(torch.randn(lag, k, dim))
         self.lag = lag
+
         # I am going to begin with batch size of 1. 
         # so, for the text encoder, I am going to process a single input at a time
         self.batch_size = lag
 
         self.textEncoder = textEncoder(num_heads, dim, batch_size)
         self.lstm = nn.LSTM(input_size = dim, hidden_size = lag)
+
     def forward(self, input):
         counter = 0
         input[0] += self.pos_embed
         # each 'tweet' in this for each loop represents all of the tweets for the TDth trading day
         for tweet in input[0]:
-            print('tweet shape', tweet.shape)
+            # so each forward pass is processing a 'batch' of tweets
+            # one more 'zoom' out? 
             m = self.textEncoder.forward(tweet)
-            print('m', m.shape)
-            # is this an exponential projection of some kind? Or a linear one?
-            test1 = nn.Linear(self.dim, 1).to(device)
-            inter = test1(m)
-            print(inter.shape)
-            test2 = nn.Tanh().to(device)
-            inter = test2(inter)
-            print(inter.shape)
-            test3 = nn.Linear(self.k, self.dim).to(device)
-            inter = test3(inter)
-            print(inter.shape)
-            output = self.u(m)
-            tooAdd = torch.cat(output, input[1][counter])
+
+            # the tanh operation should be computed separately, because W_m is stored 
+            # as a parameter
+            inter = self.textSoftmax(torch.matmul(torch.transpose(self.w_u, 0, 1), torch.tanh(self.w_m)))
+            output = torch.matmul(m, inter.to(device))
+            tooAdd = torch.cat((output.to(device), torch.tensor(input[1][counter]).to(device))).to(device)
             if(counter == 0):
-                lstm_in = tooAdd
+                lstm_in = tooAdd.view(1, 9)
             else:
-                lstm_in = torch.stack(lstm_in, tooAdd)
+                lstm_in = torch.cat((lstm_in, tooAdd.view(1, 9)), 0)
             counter += 1
         return(lstm_in)
 
