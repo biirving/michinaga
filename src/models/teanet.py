@@ -26,7 +26,7 @@ The sell mechnanism
 
 from torch import nn, tensor
 import torch
-from michinaga.src.utils import classicAttention
+from michinaga.src.utils import classicAttention, temporal
 
 """
 TEANET:
@@ -109,6 +109,10 @@ class teanet(nn.Module):
         self.textEncoder = textEncoder(num_heads, dim, batch_size)
         self.lstm = nn.LSTM(input_size = 9, hidden_size = 5)
 
+        # the dimension of the temporal atention mechanism is the lstm_input size concatenated
+        # with the lstm_outpus
+        self.temporal = temporal(14)
+
     def forward(self, input):
         counter = 0
         input[0] += self.pos_embed
@@ -132,9 +136,15 @@ class teanet(nn.Module):
                 lstm_in = torch.cat((lstm_in, tooAdd.view(1, 9)), 0)
             counter += 1
         
+        #print('lstm_in', lstm_in)
+
         # process the output through an lstm
-        out = self.lstm(lstm_in) 
-        print('lstm out', out)
-        return(lstm_in)
+        out = self.lstm(lstm_in)
+
+        #print('lstm_out', out)
+
+        # the next step is to feed the concated lstm_in and out into temporal attention
+        final, auxilary = self.temporal.forward(torch.cat((lstm_in, out[0]), 1))
+        return final, auxilary
 
 
