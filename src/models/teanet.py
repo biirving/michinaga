@@ -107,6 +107,8 @@ class teanet(nn.Module):
         self.batch_size = lag
 
         self.textEncoder = textEncoder(num_heads, dim, batch_size)
+
+
         self.lstm = nn.LSTM(input_size = 9, hidden_size = 5)
 
         # the dimension of the temporal atention mechanism is the lstm_input size concatenated
@@ -141,7 +143,8 @@ class teanet(nn.Module):
         # process the output through an lstm
         out = self.lstm(lstm_in)
 
-        #print('lstm_out', out)
+        print('lstm out', out)
+        print('lstm_out', out[0].shape)
 
         # the next step is to feed the concated lstm_in and out into temporal attention
         final, auxilary = self.temporal.forward(torch.cat((lstm_in, out[0]), 1))
