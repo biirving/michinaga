@@ -113,7 +113,7 @@ class teanet(nn.Module):
 
         # the dimension of the temporal atention mechanism is the lstm_input size concatenated
         # with the lstm_outpus
-        self.temporal = temporal(14)
+        self.temporal = temporal(2 * lag + k, num_classes)
 
     def forward(self, input):
         counter = 0
