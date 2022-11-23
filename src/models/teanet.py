@@ -143,6 +143,7 @@ class teanet(nn.Module):
         # process the output through an lstm
         out = self.lstm(lstm_in)
 
+        # identifying viability of the lstm inputs/outputs
         print('lstm out', out)
         print('lstm_out', out[0].shape)
 
