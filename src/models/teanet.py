@@ -125,6 +125,8 @@ class teanet(nn.Module):
         for tweet in input[0]:
             # so each forward pass is processing a 'batch' of tweets
             # one more 'zoom' out? 
+
+            # so, in this case, if we use the averaging technique, they can all be processed at once
             m = self.textEncoder.forward(tweet)
 
             # the tanh operation should be computed separately, because W_m is stored 
