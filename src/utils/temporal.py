@@ -36,6 +36,7 @@ class temporal(nn.Module):
 
 
 
+
     # debug forward pass
     def forward(self, input):
         print('input', input.shape)
@@ -55,5 +56,7 @@ class temporal(nn.Module):
         print(v.view(5, 1))
         print(torch.matmul(torch.transpose(auxilary_predictions, 0, 1)[0], torch.transpose(v, -1,0)))
         #print(torch.matmul(auxilary_predictions, v))
+
+        # so why is this not automatically on the device
         final = self.z_final(torch.cat((torch.tensor([torch.matmul(torch.transpose(auxilary_predictions, 0, 1)[0], v)]).to(self.device), d_vals[len(d_vals) - 1])))
         return final, auxilary_predictions
