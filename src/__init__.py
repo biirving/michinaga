@@ -1,2 +1,2 @@
-from .utils import classicAttention, wordEmbedding, temporal, DataPrep
+from .utils import classicAttention, wordEmbedding, temporal
 from .models import teanet, textEncoder

@@ -29,7 +29,7 @@ from wordEmbedding import wordEmbedding
 # The filepath is also specific to your computer
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class DataPrep:
+class dataPrep:
     def __init__(self, lag_period, movement_ratio_type, k, embedding, mode, stacked):
         #self.price_data = []
         #self.price_dates = []
