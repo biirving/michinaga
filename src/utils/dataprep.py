@@ -78,6 +78,7 @@ class DataPrep:
         counter = 0
         for f in filenames:
             counter += 1
+            print(counter)
             ticker = f[63:]
             tickername = ticker.split('.')[0]
             open_file = open(f)
@@ -94,7 +95,6 @@ class DataPrep:
                 continue
 
             num_tweets = len([entry for entry in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, entry))])
-            print('num_tweets', num_tweets)
 
             if(num_tweets < 5):
                 # we skip this ticker, because there does not exist viable data
@@ -105,7 +105,6 @@ class DataPrep:
             # if each tweet is an average, that means each day only has ONE tweet vector associated with it
             # which means that we can process more quickly through the forward pass of the teanet model
             for x in range(len(price_file) - 1, self.lag_period + 1, - 1):
-                print('x', x)
                 x_vals = []
                 movement_ratios = []
                 # here are the indices for the price values, so that we can move through the for loop effectively
@@ -161,7 +160,6 @@ class DataPrep:
                     else:
                         # we do not consider the price date if it has no corresponding date 
                         y -= 1
-                print('x vals', len(x_vals))
                 # now we have to determine if the x sample that we have accumulated is a positive or negative sample
                 if(len(x_vals) == self.lag_period):
                     # we actually want this to coincide with the value that lies just
@@ -185,9 +183,6 @@ class DataPrep:
 
 okay = DataPrep(5, 'last', 4, 'twitter', 'average', False)
 x_data, y_data = okay.returnData()
-
-print('x data', x_data)
-print('y data', y_data)
 torch.save(x_data, 'x_data.pt')
 torch.save(y_data, 'y_data.pt')
 
