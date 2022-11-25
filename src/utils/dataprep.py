@@ -25,6 +25,7 @@ import torch
 from sys import platform
 import os
 from os.path import exists
+import numpy as np
 
 # will this import be fucked? 
 from wordEmbedding import wordEmbedding
@@ -72,12 +73,10 @@ class DataPrep:
             
         # sorted list of all of the price data
         filenames = sorted(filenames)
-        print(len(filenames))
 
         # compiling the x price data
         counter = 0
         for f in filenames:
-            print(counter)
             counter += 1
             ticker = f[63:]
             tickername = ticker.split('.')[0]
@@ -95,9 +94,7 @@ class DataPrep:
                 continue
 
             num_tweets = len([entry for entry in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, entry))])
-            print('num tweets', num_tweets)
-            print('x data', len(self.x_data))
-            print('y data', len(self.y_data))
+            print('num_tweets', num_tweets)
 
             if(num_tweets < 5):
                 # we skip this ticker, because there does not exist viable data
@@ -108,16 +105,21 @@ class DataPrep:
             # if each tweet is an average, that means each day only has ONE tweet vector associated with it
             # which means that we can process more quickly through the forward pass of the teanet model
             for x in range(len(price_file) - 1, self.lag_period + 1, - 1):
+                print('x', x)
                 x_vals = []
                 movement_ratios = []
                 # here are the indices for the price values, so that we can move through the for loop effectively
                 price_values_indices = []
-                y = x - 1
+
+                # the first day in the lag period
+                y = x
+
                 #print('y', y)
                 # we build the price data only adding a 'value' if the day has a corresponding tweet vector
                 # we go from back to front in terms of moving through the file
                 tweets_checked = 0
-                while(len(x_vals) < 6 and tweets_checked <= num_tweets and y > 0):
+
+                while(len(x_vals) < 5 and tweets_checked <= num_tweets and y > 0):
                     price_to_consider = price_file[y]
                     prices = price_to_consider.split()
                     # here we check if the price day has a corresponding tweet
@@ -154,17 +156,17 @@ class DataPrep:
                                 tweets += embedded_tweet
                         tweets /= len(tweets)
                         x_vals.append([tweets, torch.tensor([float(x) for x in prices[2:6]]).to(device)])
-                        y -= 1 
+                        y -= 1
+                        tweet_file.close() 
                     else:
                         # we do not consider the price date if it has no corresponding date 
                         y -= 1
-
+                print('x vals', len(x_vals))
                 # now we have to determine if the x sample that we have accumulated is a positive or negative sample
                 if(len(x_vals) == self.lag_period):
                     # we actually want this to coincide with the value that lies just
                     # beyond the lag period, on the 6th day. If this is somewhat positive, we add it to the dataset
                     movement_ratio = float(price_file[y].split()[1])
-                    print('movement ratio', movement_ratio)
                     #movement_ratio = float(movement_ratios[len(movement_ratios) - 1])
                     # in the original paper, they only appended the data point to the list if the movement ratio fell beyond a certain threshold
                     if(movement_ratio <= -0.005 or movement_ratio >= 0.005):
@@ -176,7 +178,6 @@ class DataPrep:
                             self.y_data.append(torch.tensor([0, 1]).to(device))
                     # we set the new price value indice to one to the left of the previous
                     x = price_values_indices[1]
-
         return self.x_data, self.y_data
 
 
@@ -184,8 +185,13 @@ class DataPrep:
 
 okay = DataPrep(5, 'last', 4, 'twitter', 'average', False)
 x_data, y_data = okay.returnData()
+
 print('x data', x_data)
 print('y data', y_data)
+torch.save(x_data, 'x_data.pt')
+torch.save(y_data, 'y_data.pt')
+
+
 
 
 
