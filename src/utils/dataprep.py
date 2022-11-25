@@ -13,11 +13,6 @@ It would be ideal to use the Twitter api in order to grab live data <-- would re
 
 """
 
-
-# you know what you have to do
-# god this is boring
-# it will be easier with subsequent data
-
 # Training data
 import json
 import wordEmbedding
