@@ -30,7 +30,7 @@ from wordEmbedding import wordEmbedding
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class dataPrep:
-    def __init__(self, lag_period, movement_ratio_type, k, embedding, mode, stacked):
+    def __init__(self, lag_period, movement_ratio_type, embedding, mode, stacked):
         #self.price_data = []
         #self.price_dates = []
         #self.tweet_data = []  
@@ -41,7 +41,6 @@ class dataPrep:
         self.movement_ratio_type = movement_ratio_type
         # uh oh
         self.wordembedder = wordEmbedding(embedding, mode, stacked)
-        self.k = k
 
     # I think that they have to be processed together
     # we have to ensure that the data is such that the tweets correspond with the price data
@@ -176,7 +175,7 @@ class dataPrep:
 
         
 
-okay = DataPrep(5, 'last', 4, 'twitter', 'average', False)
+okay = DataPrep(5, 'last', 'twitter', 'average', False)
 x_data, y_data = okay.returnData()
 torch.save(x_data, 'x_data.pt')
 torch.save(y_data, 'y_data.pt')
