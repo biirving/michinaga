@@ -36,6 +36,7 @@ An implementation of a model meant to measure stocks, based around the TEANET mo
 class textEncoder(nn.Module):
     def __init__(self, num_heads, dim, batch_size) -> None:
         super().__init__()
+        self.batch_size = batch_size
         # the multihead attention mechanism
         self.multiHeadAttention = classicAttention(num_heads, dim)
         # the positional embedding will be initialized as a random parameter (will be updated with the backward call)
@@ -74,6 +75,9 @@ args:
         How many inputs are being processed at once
     - k (will this be a dynamic value?)
         How many messages will be considered for each trading day
+        Because of the nature of the data that we are working with, 
+        this value will be one for now (the embedded tweets averaged)
+
     - lag 
         How many prior trading days are being considered with each input
     - tweets 
@@ -99,15 +103,10 @@ class teanet(nn.Module):
         # is this processed with a class token, to capture the information of the input?
         #self.classtoken = nn.Parameter(torch.randn())
 
-        self.pos_embed = nn.Parameter(torch.randn(lag, k, dim))
+        self.pos_embed = nn.Parameter(torch.randn(batch_size, lag, dim))
         self.lag = lag
-
-        # I am going to begin with batch size of 1. 
-        # so, for the text encoder, I am going to process a single input at a time
-        self.batch_size = lag
-
+        self.batch_size = batch_size
         self.textEncoder = textEncoder(num_heads, dim, batch_size)
-
 
         self.lstm = nn.LSTM(input_size = 9, hidden_size = 5)
 
@@ -117,11 +116,18 @@ class teanet(nn.Module):
 
     def forward(self, input):
         counter = 0
-        input[0] += self.pos_embed
-        # each 'tweet' in this for each loop represents all of the tweets for the TDth trading day
-        # should not do this with a forloop
-        # should be done in one matrix multiplication
-        # but for that, we need to change text encoder 
+        # input shape
+       # print(input[0].shape)
+        input += self.pos_embed
+
+        # how the lstm inputs are prepared will depend on how the inputs are preprocessed
+        lstm_text_input = self.textEncoder.forward(input[0])
+
+        # here is where we concatenate the price values to the text embeddings
+        # we concatenate along the columnar dimension
+        lstm_in = torch.cat((lstm_text_input, input[1]), 1)
+    
+        """
         for tweet in input[0]:
             # so each forward pass is processing a 'batch' of tweets
             # one more 'zoom' out? 
@@ -139,7 +145,8 @@ class teanet(nn.Module):
             else:
                 lstm_in = torch.cat((lstm_in, tooAdd.view(1, 9)), 0)
             counter += 1
-        
+        """
+
         #print('lstm_in', lstm_in)
 
         # process the output through an lstm
