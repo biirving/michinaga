@@ -13,6 +13,8 @@ import sys, os
 The purpose of this attention mechanism will be to process tweet data. 
 """
 
+
+# need to adjust to deal with batches of batches (the nature of the teanet inputs)
 class classicAttention(nn.Module):
 
     # the default values in the original paper for num_heads and dim are 5 and 50 respectively
