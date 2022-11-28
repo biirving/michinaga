@@ -42,6 +42,18 @@ class dataPrep:
         # uh oh
         self.wordembedder = wordEmbedding(embedding, mode, stacked)
 
+    # create a multidimensional tensor from a list of tensors
+    def createTensor(self, tensor, dim):
+        counter = 0
+        for t in tensor:
+            if(counter == 0):
+                toReturn = t.view(1, dim)
+            else:
+                toReturn = torch.cat((toReturn, t.view(1, dim)), 0)
+            counter += 1
+        return toReturn
+
+
     # I think that they have to be processed together
     # we have to ensure that the data is such that the tweets correspond with the price data
     # therefore, we should only use price data that has a tweet to go along with it
@@ -99,7 +111,11 @@ class dataPrep:
             # if each tweet is an average, that means each day only has ONE tweet vector associated with it
             # which means that we can process more quickly through the forward pass of the teanet model
             for x in range(len(price_file) - 1, self.lag_period + 1, - 1):
+
+                # x_vals should be a tensor
                 x_vals = []
+                tweet_vals = []
+                price_vectors = []
                 movement_ratios = []
                 # here are the indices for the price values, so that we can move through the for loop effectively
                 price_values_indices = []
@@ -149,6 +165,8 @@ class dataPrep:
                                 tweets += embedded_tweet
                         tweets /= len(tweets)
                         x_vals.append([tweets, torch.tensor([float(x) for x in prices[2:6]]).to(device)])
+                        tweet_vals.append(tweets)
+                        price_vectors.append(torch.tensor([float(x) for x in prices[2:6]]).to(device))
                         y -= 1
                         tweet_file.close() 
                     else:
@@ -162,7 +180,8 @@ class dataPrep:
                     #movement_ratio = float(movement_ratios[len(movement_ratios) - 1])
                     # in the original paper, they only appended the data point to the list if the movement ratio fell beyond a certain threshold
                     if(movement_ratio <= -0.005 or movement_ratio >= 0.005):
-                        self.x_data.append(x_vals)
+                        #self.x_data.append(x_vals)
+                        self.x_data.append([self.createTensor(tweet_vals, 100), self.createTensor(price_vectors, 4)])
                         # here we should store the corresponding ticker along with the date in a tuple form
                         if(movement_ratio >= 0.005):
                             self.y_data.append(torch.tensor([1, 0]).to(device))
@@ -170,12 +189,13 @@ class dataPrep:
                             self.y_data.append(torch.tensor([0, 1]).to(device))
                     # we set the new price value indice to one to the left of the previous
                     x = price_values_indices[1]
+            break
         return self.x_data, self.y_data
 
 
         
 
-okay = DataPrep(5, 'last', 'twitter', 'average', False)
+okay = dataPrep(5, 'last', 'twitter', 'average', False)
 x_data, y_data = okay.returnData()
 torch.save(x_data, 'x_data.pt')
 torch.save(y_data, 'y_data.pt')
