@@ -34,7 +34,8 @@ class dataPrep:
         #self.price_data = []
         #self.price_dates = []
         #self.tweet_data = []  
-
+        self.tweet_data = None
+        self.price_data = None
         self.x_data = []
         self.y_data = []
         self.lag_period = lag_period
@@ -180,8 +181,18 @@ class dataPrep:
                     #movement_ratio = float(movement_ratios[len(movement_ratios) - 1])
                     # in the original paper, they only appended the data point to the list if the movement ratio fell beyond a certain threshold
                     if(movement_ratio <= -0.005 or movement_ratio >= 0.005):
-                        #self.x_data.append(x_vals)
-                        self.x_data.append([self.createTensor(tweet_vals, 100), self.createTensor(price_vectors, 4)])
+                        # self.x_data.append(x_vals)
+                        # should this instead be a tensor of tensors
+                        weets = self.createTensor(tweet_vals, 100)
+                        rices = self.createTensor(price_vectors, 4)
+                        if(self.tweet_data == None):
+                            self.tweet_data = weets.view(1, 5, 100)
+                            self.price_data = rices.view(1, 5, 4)
+                        else:
+                            self.tweet_data = torch.cat((self.tweet_data, weets.view(1, 5, 100)), 0)
+                            self.price_data = torch.cat((self.price_data, rices.view(1, 5, 4)))
+
+                        #self.x_data.append(self.createTensor(price_vectors, 4))
                         # here we should store the corresponding ticker along with the date in a tuple form
                         if(movement_ratio >= 0.005):
                             self.y_data.append(torch.tensor([1, 0]).to(device))
@@ -190,15 +201,18 @@ class dataPrep:
                     # we set the new price value indice to one to the left of the previous
                     x = price_values_indices[1]
             break
-        return self.x_data, self.y_data
+        return [self.tweet_data, self.price_data], self.createTensor(self.y_data, 2)
 
 
         
 
 okay = dataPrep(5, 'last', 'twitter', 'average', False)
 x_data, y_data = okay.returnData()
-torch.save(x_data, 'x_data.pt')
-torch.save(y_data, 'y_data.pt')
+print(x_data[0].shape)
+print(x_data[1].shape)
+print(y_data.shape)
+#torch.save(x_data, 'x_data.pt')
+#torch.save(y_data, 'y_data.pt')
 
 
 

@@ -121,6 +121,7 @@ class teanet(nn.Module):
         input += self.pos_embed
 
         # how the lstm inputs are prepared will depend on how the inputs are preprocessed
+        # as of now
         lstm_text_input = self.textEncoder.forward(input[0])
 
         # here is where we concatenate the price values to the text embeddings
