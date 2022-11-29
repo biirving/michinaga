@@ -36,15 +36,15 @@ class classicAttention(nn.Module):
         
     def forward(self, input):
         # q, k, v matrices
-        q_mat = rearrange(self.q(input), 'b (h d) -> b h d', h = self.num_heads)
-        v_mat = rearrange(self.k(input), 'b (h d) -> b h d', h = self.num_heads)
-        k_mat = rearrange(self.v(input), 'b (h d) -> b h d', h = self.num_heads)
+        q_mat = rearrange(self.q(input), 'b l (h d) -> b l h d', h = self.num_heads)
+        v_mat = rearrange(self.k(input), 'b l (h d) -> b l h d', h = self.num_heads)
+        k_mat = rearrange(self.v(input), 'b l (h d) -> b l h d', h = self.num_heads)
 
         # Softmax step, calculated for each row of each head
-        inter = self.softmax(torch.matmul(q_mat, torch.transpose(k_mat, 1, 2)) / (math.sqrt(self.Dh) * self.num_heads))
+        inter = self.softmax(torch.matmul(q_mat, torch.transpose(k_mat, 2, 3)) / (math.sqrt(self.Dh) * self.num_heads))
 
         # prepare the vector for input
-        final = rearrange(torch.matmul(inter, v_mat), 'b h d -> b (h d)', h = self.num_heads)
+        final = rearrange(torch.matmul(inter, v_mat), 'b l h d -> b l (h d)', h = self.num_heads)
 
         # final computation
         return self.multi_mad(final)

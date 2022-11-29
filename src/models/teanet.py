@@ -34,9 +34,8 @@ An implementation of a model meant to measure stocks, based around the TEANET mo
 """
 
 class textEncoder(nn.Module):
-    def __init__(self, num_heads, dim, batch_size) -> None:
+    def __init__(self, num_heads, dim) -> None:
         super().__init__()
-        self.batch_size = batch_size
         # the multihead attention mechanism
         self.multiHeadAttention = classicAttention(num_heads, dim)
         # the positional embedding will be initialized as a random parameter (will be updated with the backward call)
@@ -106,13 +105,13 @@ class teanet(nn.Module):
         self.pos_embed = nn.Parameter(torch.randn(batch_size, lag, dim))
         self.lag = lag
         self.batch_size = batch_size
-        self.textEncoder = textEncoder(num_heads, dim, batch_size)
+        self.textEncoder = textEncoder(num_heads, dim)
 
-        self.lstm = nn.LSTM(input_size = 9, hidden_size = 5)
+        self.lstm = nn.LSTM(input_size = 104, hidden_size = 5)
 
         # the dimension of the temporal atention mechanism is the lstm_input size concatenated
         # with the lstm_outpus
-        self.temporal = temporal(2 * lag + k, num_classes)
+        self.temporal = temporal(109, num_classes)
 
     def forward(self, input):
         counter = 0
@@ -126,39 +125,14 @@ class teanet(nn.Module):
 
         # here is where we concatenate the price values to the text embeddings
         # we concatenate along the columnar dimension
-        lstm_in = torch.cat((lstm_text_input, input[1]), 1)
-    
-        """
-        for tweet in input[0]:
-            # so each forward pass is processing a 'batch' of tweets
-            # one more 'zoom' out? 
-
-            # so, in this case, if we use the averaging technique, they can all be processed at once
-            m = self.textEncoder.forward(tweet)
-
-            # the tanh operation should be computed separately, because W_m is stored 
-            # as a parameter
-            inter = self.textSoftmax(torch.matmul(torch.transpose(self.w_u, 0, 1), torch.tanh(self.w_m)))
-            output = torch.matmul(m, inter)
-            tooAdd = torch.cat((output, input[1][counter]))
-            if(counter == 0):
-                lstm_in = tooAdd.view(1, 9)
-            else:
-                lstm_in = torch.cat((lstm_in, tooAdd.view(1, 9)), 0)
-            counter += 1
-        """
-
-        #print('lstm_in', lstm_in)
+        lstm_in = torch.cat((lstm_text_input, input[1]), 2)
 
         # process the output through an lstm
         out = self.lstm(lstm_in)
-
-        # identifying viability of the lstm inputs/outputs
-        print('lstm out', out)
-        print('lstm_out', out[0].shape)
+        print('out shape', out[0].shape)
 
         # the next step is to feed the concated lstm_in and out into temporal attention
-        final, auxilary = self.temporal.forward(torch.cat((lstm_in, out[0]), 1))
+        final, auxilary = self.temporal.forward(torch.cat((lstm_in, out[0]), 2))
         return final, auxilary
 
 

@@ -45,6 +45,7 @@ class dataPrep:
 
     # create a multidimensional tensor from a list of tensors
     def createTensor(self, tensor, dim):
+        toReturn = None
         counter = 0
         for t in tensor:
             if(counter == 0):
@@ -68,6 +69,8 @@ class dataPrep:
         elif platform == "win64":
             #file = open(r'C:\Users\Benjamin\Desktop\ml\stocknet-dataset\price\preprocessed\AAPL.txt', 'r')
             directory = r'C:\Users\Benjamin\Desktop\ml\stocknet-dataset\price'
+        elif platform == 'linux' or platform == 'linux2':
+            directory = r'/home/benjamin/Desktop/ml/michinaga/src/data/prices'
 
         filenames = []
         # iterate over files in
@@ -86,7 +89,7 @@ class dataPrep:
         for f in filenames:
             counter += 1
             print(counter)
-            ticker = f[63:]
+            ticker = f[52:]
             tickername = ticker.split('.')[0]
             open_file = open(f)
             price_file = open_file.readlines()
@@ -96,6 +99,8 @@ class dataPrep:
                 dir_path = r'/Users/benjaminirving/Desktop/mlWalk/michinaga/src/data/preprocessed/' + str(tickername)
             elif platform == "win64":
                 dir_path = r'C:\Users\Benjamin\Desktop\ml\stocknet-dataset\preprocessed\'' + str(tickername)
+            elif platform == 'linux' or platform == 'linux2':
+                dir_path = r'/home/benjamin/Desktop/ml/michinaga/src/data/preprocessed/' + str(tickername)
             
             # check if there are even any tweets for the given ticker
             if(not(os.path.exists(dir_path))):
@@ -124,7 +129,6 @@ class dataPrep:
                 # the first day in the lag period
                 y = x
 
-                #print('y', y)
                 # we build the price data only adding a 'value' if the day has a corresponding tweet vector
                 # we go from back to front in terms of moving through the file
                 tweets_checked = 0
@@ -142,8 +146,10 @@ class dataPrep:
                     elif platform == "win64":
                         #file = open(r'C:\Users\Benjamin\Desktop\ml\stocknet-dataset\price\preprocessed\AAPL.txt', 'r')
                         exists = os.path.isfile(r'C:\Users\Benjamin\Desktop\ml\stocknet-dataset\preprocessed\'' + str(tickername) + '\'' + str(date))
-
+                    elif platform == 'linux' or platform == 'linux2':
+                        exists = os.path.isfile(r'/home/benjamin/Desktop/ml/michinaga/src/data/preprocessed/' + str(tickername) + '/' + str(date))
                     # if the corresponding date has tweet data for it
+
                     if(exists):
                         tweets_checked += 1
                         movement_ratios.append(prices[1])
@@ -152,6 +158,8 @@ class dataPrep:
                             tweet_file = open(r'/Users/benjaminirving/Desktop/mlWalk/michinaga/src/data/preprocessed/' + str(tickername) + '/' + str(date))
                         elif platform == "win64":
                             tweet_file = open(r'C:\Users\Benjamin\Desktop\ml\stocknet-dataset\preprocessed\'' + str(tickername) + '\'' + str(date))
+                        elif platform == 'linux' or platform == 'linux2':
+                            tweet_file = open(r'/home/benjamin/Desktop/ml/michinaga/src/data/preprocessed/' + str(tickername) + '/' + str(date))
 
                         # the tweets from this specific date
                         text = tweet_file.readlines()
@@ -200,7 +208,6 @@ class dataPrep:
                             self.y_data.append(torch.tensor([0, 1]).to(device))
                     # we set the new price value indice to one to the left of the previous
                     x = price_values_indices[1]
-            break
         return [self.tweet_data, self.price_data], self.createTensor(self.y_data, 2)
 
 
@@ -208,11 +215,9 @@ class dataPrep:
 
 okay = dataPrep(5, 'last', 'twitter', 'average', False)
 x_data, y_data = okay.returnData()
-print(x_data[0].shape)
-print(x_data[1].shape)
-print(y_data.shape)
-#torch.save(x_data, 'x_data.pt')
-#torch.save(y_data, 'y_data.pt')
+torch.save(x_data[0], 'x_tweet_data.pt')
+torch.save(x_data[1], 'x_price_data.pt')
+torch.save(y_data, 'y_data.pt')
 
 
 
