@@ -13,8 +13,10 @@ import PIL
 import sys, os
 
 class temporal(nn.Module):
-    def __init__(self, dim, num_classes):
+    def __init__(self, dim, num_classes, batch_size):
         super(temporal, self).__init__()
+        self.batch_size = batch_size
+
         self.num_classes = num_classes
 
         self.d = nn.Sequential(nn.Linear(dim, dim), nn.Tanh())
@@ -39,7 +41,8 @@ class temporal(nn.Module):
         d_vals = self.d(input)
         v_inf = self.v_info(d_vals)
         v_dep = torch.matmul(d_vals[:, 4, :], torch.transpose(self.v_dependency(d_vals), 1, 2))
-        v = torch.mul(v_inf.view(5, 5), v_dep)
+        print(v_dep.shape)
+        v = torch.mul(v_inf.view(self.batch_size, 5), v_dep)
         auxilary_predictions = self.z_aux(d_vals)
-        final = self.z_final(torch.cat((torch.matmul(torch.transpose(auxilary_predictions, 1, 2), v), d_vals[:, 4, :].view(5, 1, 109)), 2))
+        final = self.z_final(torch.cat((torch.matmul(torch.transpose(auxilary_predictions, 1, 2), v), d_vals[:, 4, :].view(self.batch_size, 1, 109)), 2))
         return final, auxilary_predictions

@@ -28,10 +28,7 @@ from torch import nn, tensor
 import torch
 from michinaga.src.utils import classicAttention, temporal
 
-"""
-TEANET:
-An implementation of a model meant to measure stocks, based around the TEANET model
-"""
+
 
 class textEncoder(nn.Module):
     def __init__(self, num_heads, dim) -> None:
@@ -58,9 +55,6 @@ class textEncoder(nn.Module):
         output = self.FFN(inter)
         return self.attention.forward(output)
 
-
-# I am going to implement first for a batch size of 1
-
 """
 teanet 
 long range dependencies for trend and price analysis
@@ -84,54 +78,33 @@ args:
     - prices
         normalized prices for all of the trading days in the lag period
 """
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class teanet(nn.Module):
     def __init__(self, num_heads, dim, num_classes, batch_size, k, lag) -> None:
         super().__init__()
         self.dim = dim
-        self.k = k
-
-        # instead of the sequential shite
-        #self.u = nn.Sequential(nn.Linear(k, dim), nn.Tanh(), nn.Linear(dim, dim), nn.Softmax(dim))
+        # deprecated: we are just processing the tweet embeddings for each
+        # day as the average of all the tweets available in the dataset
+        # to capture as much information as possible
+        #self.k = k
         self.w_u = nn.Parameter(torch.randn(self.dim, self.dim))
         self.w_m = nn.Parameter(torch.randn(self.dim))
         self.textSoftmax = nn.Softmax(dim = 0)
         self.num_classes = num_classes
-
-        # is this processed with a class token, to capture the information of the input?
-        #self.classtoken = nn.Parameter(torch.randn())
-
         self.pos_embed = nn.Parameter(torch.randn(batch_size, lag, dim))
         self.lag = lag
         self.batch_size = batch_size
         self.textEncoder = textEncoder(num_heads, dim)
-
         self.lstm = nn.LSTM(input_size = 104, hidden_size = 5)
-
-        # the dimension of the temporal atention mechanism is the lstm_input size concatenated
-        # with the lstm_outpus
-        self.temporal = temporal(109, num_classes)
+        self.temporal = temporal(109, num_classes, batch_size)
 
     def forward(self, input):
         counter = 0
-        # input shape
-       # print(input[0].shape)
         input += self.pos_embed
-
-        # how the lstm inputs are prepared will depend on how the inputs are preprocessed
-        # as of now
         lstm_text_input = self.textEncoder.forward(input[0])
-
-        # here is where we concatenate the price values to the text embeddings
-        # we concatenate along the columnar dimension
         lstm_in = torch.cat((lstm_text_input, input[1]), 2)
-
-        # process the output through an lstm
         out = self.lstm(lstm_in)
-        print('out shape', out[0].shape)
-
-        # the next step is to feed the concated lstm_in and out into temporal attention
         final, auxilary = self.temporal.forward(torch.cat((lstm_in, out[0]), 2))
         return final, auxilary
 
