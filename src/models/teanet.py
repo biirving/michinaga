@@ -1,34 +1,11 @@
 """
 The TEAnet model, for stock market analysis.
-
-
-There are two primary stages to the mechnaism that I wish to focus on:
-
-The buy mechanism
-    - In the original TEAnet paper, they focus on a binary increase/decrease model
-    - Instead, I want to focus on trends 
-    - Text from the tweets appeared to be as if not more significant of an indicator 
-        of a positive/negative price outlook. Will this be the same case for trend identification?
-    - if the model predicts that the stock price will fall, the trader will buy the stock when it is possible to buy it at less than 1% 
-        of the short price
-
-The sell mechnanism
-    - Original authors employed binary system introduced in another paper. When the stock went above a certain
-        threshold of 2%, the sell would be triggered. Otherwise the trader will need to sell the stock at the closing price at the end of the day
-    - the sell mechanism in this model will focus on trends, similarly to the buy mechanisms 
-    - Bullish vs. Bearish
-    - The temporal data becomes far more interesting in this case
-    - Problems with this strategy:
-        The tweets aren't as effective of a mechnanism over large timescales, so trend prediction becomes less clear
-        5 days vs 10 days results in a significant price increase 
-
 """
 
 from torch import nn, tensor
 import torch
 from michinaga.src.utils import classicAttention, temporal
-
-
+from einops import repeat
 
 class textEncoder(nn.Module):
     def __init__(self, num_heads, dim) -> None:
@@ -51,8 +28,8 @@ class textEncoder(nn.Module):
     """
     def forward(self, input):
         inter = self.multiHeadAttention.forward(input)
-        inter = self.layernorm(inter + input)
-        output = self.FFN(inter)
+        new = self.layernorm(inter + input)
+        output = self.FFN(new)
         return self.attention.forward(output)
 
 """
@@ -66,7 +43,9 @@ args:
         The dimension of the message embeddings (what will they be projected into)
     - batch size 
         How many inputs are being processed at once
-    - k (will this be a dynamic value?)
+
+    DEPRECATED
+    - k 
         How many messages will be considered for each trading day
         Because of the nature of the data that we are working with, 
         this value will be one for now (the embedded tweets averaged)
@@ -81,7 +60,7 @@ args:
 
 
 class teanet(nn.Module):
-    def __init__(self, num_heads, dim, num_classes, batch_size, k, lag) -> None:
+    def __init__(self, num_heads, dim, num_classes, batch_size, lag) -> None:
         super().__init__()
         self.dim = dim
         # deprecated: we are just processing the tweet embeddings for each
@@ -92,20 +71,34 @@ class teanet(nn.Module):
         self.w_m = nn.Parameter(torch.randn(self.dim))
         self.textSoftmax = nn.Softmax(dim = 0)
         self.num_classes = num_classes
-        self.pos_embed = nn.Parameter(torch.randn(batch_size, lag, dim))
+        self.pos_embed = nn.Parameter(torch.randn(1, lag, dim))
         self.lag = lag
         self.batch_size = batch_size
+        """
+        consider increasing the number of encoder blocks, to stabilize performance
+        """
         self.textEncoder = textEncoder(num_heads, dim)
         self.lstm = nn.LSTM(input_size = 104, hidden_size = 5)
         self.temporal = temporal(109, num_classes, batch_size)
 
+    """
+    This should be dynamic based on the input from the user
+    """
+    def setBatchSize(self, new):
+        self.batch_size = new
+        self.temporal.setBatchSize(new)
+
     def forward(self, input):
-        counter = 0
-        input += self.pos_embed
+        # does this fuck it up
+        input[0] += repeat(self.pos_embed, 'n d w -> (b n) d w', b = self.batch_size)
         lstm_text_input = self.textEncoder.forward(input[0])
         lstm_in = torch.cat((lstm_text_input, input[1]), 2)
         out = self.lstm(lstm_in)
-        final, auxilary = self.temporal.forward(torch.cat((lstm_in, out[0]), 2))
-        return final, auxilary
+        out[1][0].detach()
+        out[1][1].detach()
+        # to prevent the second run through on the same variable? Or use buffers? 
+        lstm_copy = lstm_in
+        final, auxilary = self.temporal.forward(torch.cat((lstm_copy, out[0]), 2))
+        return final
 
 

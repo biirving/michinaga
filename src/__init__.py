@@ -1,2 +1,2 @@
-from .utils import classicAttention, wordEmbedding, temporal
+from .utils import classicAttention, temporal
 from .models import teanet, textEncoder
