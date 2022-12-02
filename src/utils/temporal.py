@@ -39,7 +39,7 @@ class temporal(nn.Module):
     def setBatchSize(self, new):
         self.batch_size = new
 
-    # debug forward pass
+    # debug forward pass, use intermediate variables
     def forward(self, input):
         d_vals = self.d(input)
         v_inf = self.v_info(d_vals)
@@ -47,6 +47,6 @@ class temporal(nn.Module):
         v_dep = torch.matmul(d_target, torch.transpose(self.v_dependency(d_vals), 1, 2))
         v = torch.mul(v_inf.view(self.batch_size, 1, 5), v_dep)
         auxilary_predictions = self.z_aux(d_vals)
-        d_target_2 = d_target.detach().clone()
-        final = self.z_final(torch.cat((torch.matmul(torch.transpose(auxilary_predictions, 1, 2), v.view(self.batch_size, 5, 1)), d_target_2), 2))
-        return final, auxilary_predictions
+        final = self.z_final(torch.cat(
+            (torch.matmul(torch.transpose(auxilary_predictions, 1, 2), v.view(self.batch_size, 5, 1)), d_target), 2))
+        return final 

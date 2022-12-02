@@ -63,13 +63,6 @@ class teanet(nn.Module):
     def __init__(self, num_heads, dim, num_classes, batch_size, lag) -> None:
         super().__init__()
         self.dim = dim
-        # deprecated: we are just processing the tweet embeddings for each
-        # day as the average of all the tweets available in the dataset
-        # to capture as much information as possible
-        #self.k = k
-        self.w_u = nn.Parameter(torch.randn(self.dim, self.dim))
-        self.w_m = nn.Parameter(torch.randn(self.dim))
-        self.textSoftmax = nn.Softmax(dim = 0)
         self.num_classes = num_classes
         self.pos_embed = nn.Parameter(torch.randn(1, lag, dim))
         self.lag = lag
@@ -89,16 +82,12 @@ class teanet(nn.Module):
         self.temporal.setBatchSize(new)
 
     def forward(self, input):
-        # does this fuck it up
-        input[0] += repeat(self.pos_embed, 'n d w -> (b n) d w', b = self.batch_size)
-        lstm_text_input = self.textEncoder.forward(input[0])
+        toFeed = input[0] + repeat(self.pos_embed, 'n d w -> (b n) d w', b = self.batch_size)
+        lstm_text_input = self.textEncoder.forward(toFeed)
         lstm_in = torch.cat((lstm_text_input, input[1]), 2)
         out = self.lstm(lstm_in)
-        out[1][0].detach()
-        out[1][1].detach()
-        # to prevent the second run through on the same variable? Or use buffers? 
         lstm_copy = lstm_in
-        final, auxilary = self.temporal.forward(torch.cat((lstm_copy, out[0]), 2))
+        final = self.temporal.forward(torch.cat((lstm_copy, out[0]), 2))
         return final
 
 
