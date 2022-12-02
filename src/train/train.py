@@ -50,9 +50,11 @@ def train(model, params):
     """
     
     for e in tqdm(range(epochs)):
+
         train_index = 0
         training_loss = []
-        for t in tqdm(range(int(len(x_train_tweets) - 1))):
+
+        while(train_index < len(x_train_tweets) - 1):
             model.zero_grad()
             x_input = [x_train_tweets[train_index:train_index+batch_size].view(batch_size, 5, 100).to(device), x_price_train[train_index:train_index+batch_size].view(batch_size, 5, 4).to(device)]
             out = model.forward(x_input)
@@ -62,9 +64,10 @@ def train(model, params):
             loss.backward()
             adam.step()
             train_index += batch_size
-        
+        print('\n')
         print('epoch: ', e)
         print('loss total: ', sum(training_loss))
+        print('\n')
         training_loss_over_epochs.append(training_loss)
 
     torch.save(model, 'trained_teanet.pt')
@@ -81,8 +84,7 @@ def train(model, params):
         num_correct = 0
         tot = 0
         model.setBatchSize(1)
-        for y in range(y_test.shape[0]):
-            print(y)
+        for y in tqdm(range(int(y_test.shape[0]))):
             out = model.forward([x_test_tweets[y].view(1, 5, 100).to(device), x_test_price[y].view(1, 5, 4).to(device)])
             actual = torch.max(y_test[y].to(device), dim = 0).indices
             out_index = torch.max(out, dim = 2).indices

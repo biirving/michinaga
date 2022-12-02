@@ -10,16 +10,9 @@ from einops import repeat
 class textEncoder(nn.Module):
     def __init__(self, num_heads, dim) -> None:
         super().__init__()
-        # the multihead attention mechanism
         self.multiHeadAttention = classicAttention(num_heads, dim)
-        # the positional embedding will be initialized as a random parameter (will be updated with the backward call)
-        # layer normalization in the text encoder of the model
-        # you add and normalize
         self.layernorm = nn.LayerNorm(dim)
-        # the feed forward neural network
         self.FFN = nn.Sequential(nn.Linear(dim, dim), nn.ReLU(), nn.Linear(dim, dim))
-        # this is followed by another attention layer
-        # not multihead
         self.attention = classicAttention(1, dim)
 
     """
