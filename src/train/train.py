@@ -99,7 +99,8 @@ def train(model, params):
 if __name__ == "__main__":
 
     batch_size = 5
-    model = teanet(5, 100, 2, batch_size, 5)
+    #model = teanet(5, 100, 2, batch_size, 5)
+    model = torch.load('trained_teanet.pt')
 
     params = {
         'x_tweet_train': torch.load('x_train_tweets.pt'),
