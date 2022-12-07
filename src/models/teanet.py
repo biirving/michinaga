@@ -79,8 +79,6 @@ class teanet(nn.Module):
         lstm_text_input = self.textEncoder.forward(toFeed)
         lstm_in = torch.cat((lstm_text_input, input[1]), 2)
         out = self.lstm(lstm_in)
-        # not needed?
-        lstm_copy = lstm_in
         final = self.temporal.forward(torch.cat((lstm_in, out[0]), 2))
         return final
 

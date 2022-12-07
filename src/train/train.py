@@ -4,9 +4,10 @@ Lets train
 
 import torch
 from torch import tensor, nn
-import matplotlib
+import matplotlib.pyplot as plt
 from michinaga.src import teanet
 from tqdm import tqdm
+import numpy as np
 
 
 
@@ -96,11 +97,48 @@ def train(model, params):
     print("Basic accuracy on test set: ", accuracy)
     return training_loss_over_epochs, accuracy
 
+def plot(arr_list, legend_list, color_list, ylabel, fig_title):
+    """
+    Args:
+        arr_list (list): list of results arrays to plot
+        legend_list (list): list of legends corresponding to each result array
+        color_list (list): list of color corresponding to each result array
+        ylabel (string): label of the Y axis
+
+        Note that, make sure the elements in the arr_list, legend_list and color_list are associated with each other correctly.
+        Do not forget to change the ylabel for different plots.
+    """
+    # set the figure type
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel("Time Steps")
+
+    # ploth results
+    h_list = []
+    for arr, legend, color in zip(arr_list, legend_list, color_list):
+        # compute the standard error
+        arr_err = arr.std(axis=0) / np.sqrt(arr.shape[0])
+        # plot the mean
+        h, = ax.plot(range(arr.shape[1]), arr.mean(axis=0), color=color, label=legend)
+        # plot the confidence band
+        arr_err *= 1.96
+        ax.fill_between(range(arr.shape[1]), arr.mean(axis=0) - arr_err, arr.mean(axis=0) + arr_err, alpha=0.3,
+                        color=color)
+        # save the plot handle
+        h_list.append(h)
+
+    # plot legends
+    ax.set_title(f"{fig_title}")
+    ax.legend(handles=h_list)
+
+    plt.show()
+
 if __name__ == "__main__":
 
     batch_size = 5
     #model = teanet(5, 100, 2, batch_size, 5)
-    model = torch.load('trained_teanet.pt')
+    model = torch.load('teanetUlt.pt')
 
     params = {
         'x_tweet_train': torch.load('x_train_tweets.pt'),
@@ -114,4 +152,19 @@ if __name__ == "__main__":
         'learning_rate': 1e-3
     }
 
-    train(model, params)
+    training_loss, accuracy = train(model, params)
+
+    #training_loss = np.array(training_loss)
+    
+    plot([training_loss[9]], ['teanet'], ['r'], 'loss', 'Loss performance over time')
+
+
+
+        
+
+            
+
+            
+
+
+

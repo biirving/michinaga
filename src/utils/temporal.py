@@ -21,7 +21,7 @@ class temporal(nn.Module):
         self.d = nn.Sequential(nn.Linear(dim, dim), nn.Tanh())
         self.v_info = nn.Sequential(nn.Linear(dim, dim), nn.Tanh(), nn.Linear(dim, 1))
         self.v_dependency = nn.Sequential(nn.Linear(dim, dim), nn.Tanh())
-        self.z_aux = nn.Sequential(nn.Linear(dim, 1), nn.Softmax(dim = 1))
+        self.z_aux = nn.Sequential(nn.Linear(dim, num_classes), nn.Softmax(dim = 2), nn.Linear(num_classes, 1))
         self.z_final = nn.Sequential(nn.Linear(dim + 1, self.num_classes), nn.Softmax(dim = num_classes))
 
     """
