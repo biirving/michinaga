@@ -81,5 +81,3 @@ class teanet(nn.Module):
         out = self.lstm(lstm_in)
         final = self.temporal.forward(torch.cat((lstm_in, out[0]), 2))
         return final
-
-
