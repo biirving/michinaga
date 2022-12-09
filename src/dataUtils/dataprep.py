@@ -151,7 +151,7 @@ class dataPrep:
 
                     if(exists):
                         tweets_checked += 1
-                        movement_ratios.append(prices[1])
+                        movement_ratios.append(prices[5])
                         price_values_indices.append(y)
                         if platform == "darwin":
                             tweet_file = open(r'/Users/benjaminirving/Desktop/mlWalk/michinaga/src/data/preprocessed/' + str(tickername) + '/' + str(date))
@@ -172,9 +172,9 @@ class dataPrep:
                             else:
                                 tweets += embedded_tweet
                         tweets /= len(tweets)
-                        x_vals.append([tweets, torch.tensor([float(x) for x in prices[2:6]]).to(device)])
+                        x_vals.append([tweets, torch.tensor([float(x) for x in prices[1:5]]).to(device)])
                         tweet_vals.append(tweets)
-                        price_vectors.append(torch.tensor([float(x) for x in prices[2:6]]).to(device))
+                        price_vectors.append(torch.tensor([float(x) for x in prices[1:5]]).to(device))
                         y -= 1
                         tweet_file.close() 
                     else:
@@ -182,12 +182,10 @@ class dataPrep:
                         y -= 1
                 # now we have to determine if the x sample that we have accumulated is a positive or negative sample
                 if(len(x_vals) == self.lag_period):
-                    # we actually want this to coincide with the value that lies just
-                    # beyond the lag period, on the 6th day. If this is somewhat positive, we add it to the dataset
-                    movement_ratio = float(price_file[y].split()[1])
+                    movement_ratio = float(price_file[y].split()[5])
                     #movement_ratio = float(movement_ratios[len(movement_ratios) - 1])
                     # in the original paper, they only appended the data point to the list if the movement ratio fell beyond a certain threshold
-                    if(movement_ratio <= -0.005 or movement_ratio >= 0.005):
+                    if(movement_ratio <= -0.005 or movement_ratio > 0.0055):
                         # self.x_data.append(x_vals)
                         # should this instead be a tensor of tensors
                         weets = self.createTensor(tweet_vals, 100)
@@ -201,11 +199,12 @@ class dataPrep:
 
                         #self.x_data.append(self.createTensor(price_vectors, 4))
                         # here we should store the corresponding ticker along with the date in a tuple form
-                        if(movement_ratio >= 0.005):
+                        if(movement_ratio > 0.0055):
                             self.y_data.append(torch.tensor([1, 0]).to(device))
                         else:
                             self.y_data.append(torch.tensor([0, 1]).to(device))
-                    # we set the new price value indice to one to the left of the previous
+                    # we set the new price value indice to one to the left of the previous, where to
+                    # begin our next value from
                     x = price_values_indices[1]
         return [self.tweet_data, self.price_data], self.createTensor(self.y_data, 2)
 

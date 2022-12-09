@@ -2,13 +2,11 @@
 Data prep, except for the identification of bullish vs. bearish trends rather then
 binary price prediction
 
-10-day lag (should they be consecutive? It doesn't particularly matter)
+Lets let it fuckin rip
+(the tweets are effective for short term information) <-- but does it matter, if the tweets lead up to the trend
+change?
 
-How to apply the model to long-term investments? or, LONGER term investments
-
-the stock price should evolve over a number of months
-
-Also, this is again grabbing from the downloaded dataset
+use the news sources from alpha vantage (perhaps contains more fundamental information)
 """
 
 # Training data

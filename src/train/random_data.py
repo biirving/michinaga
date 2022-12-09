@@ -5,7 +5,6 @@ a file to create the train and test splits
 """
 
 import torch
-from michinaga.src import teanet
 import random
 
 

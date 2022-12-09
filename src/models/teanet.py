@@ -61,7 +61,7 @@ class teanet(nn.Module):
         self.lag = lag
         self.batch_size = batch_size
         """
-        consider increasing the number of encoder blocks, to stabilize performance
+        consider increasing the number of encoder blocks, to stabilize performance.
         """
         self.textEncoder = textEncoder(num_heads, dim)
         self.lstm = nn.LSTM(input_size = 104, hidden_size = 5)
