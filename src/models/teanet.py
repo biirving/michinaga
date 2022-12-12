@@ -25,6 +25,21 @@ class textEncoder(nn.Module):
         output = self.FFN(new)
         return self.attention.forward(output)
 
+
+
+"""
+We want to have layernorms before each segment in the model.
+Helps to alleviate vanishing/exploding gradient
+"""
+class PreNorm(nn.Module):
+    def __init__(self, dim, fn):
+        super().__init__()
+        self.norm = nn.LayerNorm(dim)
+        self.fn = fn
+    def forward(self, x, **kwargs):
+        return self.fn(self.norm(x), **kwargs)
+
+
 """
 teanet 
 long range dependencies for trend and price analysis
@@ -58,26 +73,35 @@ class teanet(nn.Module):
         self.dim = dim
         self.num_classes = num_classes
         self.pos_embed = nn.Parameter(torch.randn(1, lag, dim))
+        self.price_pos_embed = None
+
         self.lag = lag
         self.batch_size = batch_size
+        self.dropout = nn.Dropout(p = 0.)
+    
+
         """
         consider increasing the number of encoder blocks, to stabilize performance.
+        Testing with 6 encoders
         """
-        self.textEncoder = textEncoder(num_heads, dim)
-        self.lstm = nn.LSTM(input_size = 104, hidden_size = 5)
-        self.temporal = temporal(109, num_classes, batch_size)
+        num_encoders = 6
+        self.textEncoder = nn.ModuleList([textEncoder(num_heads, dim), nn.LayerNorm(dim)] * num_encoders)
+        num_lstms = 1
+        self.lstm = nn.LSTM(input_size = 104, hidden_size = 5, num_layers = num_lstms)
+        self.temporal = nn.Sequential(nn.LayerNorm(109), temporal(109, num_classes, batch_size))
 
     """
     This should be dynamic based on the input from the user
     """
     def setBatchSize(self, new):
         self.batch_size = new
-        self.temporal.setBatchSize(new)
+        self.temporal[1].setBatchSize(new)
 
     def forward(self, input):
         toFeed = input[0] + repeat(self.pos_embed, 'n d w -> (b n) d w', b = self.batch_size)
-        lstm_text_input = self.textEncoder.forward(toFeed)
-        lstm_in = torch.cat((lstm_text_input, input[1]), 2)
+        for text in self.textEncoder:
+            toFeed = text.forward(toFeed)
+        lstm_in = torch.cat((toFeed, input[1]), 2)
         out = self.lstm(lstm_in)
         final = self.temporal.forward(torch.cat((lstm_in, out[0]), 2))
         return final

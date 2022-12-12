@@ -42,7 +42,6 @@ class classicAttention(nn.Module):
 
         # Softmax step, calculated for each row of each head
         inter = self.softmax(torch.matmul(q_mat, torch.transpose(k_mat, 2, 3)) / (math.sqrt(self.Dh) * self.num_heads))
-
         # prepare the vector for input
         final = rearrange(torch.matmul(inter, v_mat), 'b l h d -> b l (h d)', h = self.num_heads)
 

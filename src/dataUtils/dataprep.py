@@ -162,15 +162,20 @@ class dataPrep:
 
                         # the tweets from this specific date
                         text = tweet_file.readlines()
-                        # we are going to be doing an average, for some days only have 1 tweet. I don't want dynamic shaping in the model itself <-- could mess with the weights in a strange way
-                        for t in range(len(text)):
+                        # we are going to be doing an average, for some days only have 1 tweet. 
+                        # I don't want dynamic shaping in the model itself <-- could mess with the weights in a strange way
+                        # but wouldn't this be better
+                        # for t in range(len(text)):
+                        for t in range(1):
                             tweet_dict = json.loads(text[t])
                             input = tweet_dict['text']
+                            # how do we check for symbols in the tweet?
                             embedded_tweet = self.wordembedder.embed(input)
                             if(t == 0):
                                 tweets = embedded_tweet
                             else:
                                 tweets += embedded_tweet
+                        # taking the average of the tweets
                         tweets /= len(tweets)
                         x_vals.append([tweets, torch.tensor([float(x) for x in prices[1:5]]).to(device)])
                         tweet_vals.append(tweets)
@@ -208,8 +213,6 @@ class dataPrep:
                     x = price_values_indices[1]
         return [self.tweet_data, self.price_data], self.createTensor(self.y_data, 2)
 
-
-        
 
 okay = dataPrep(5, 'last', 'twitter', 'average', False)
 x_data, y_data = okay.returnData()

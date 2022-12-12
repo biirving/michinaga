@@ -3,13 +3,13 @@ Lets train
 """
 
 import torch
-from torch import tensor, nn
+from torch import tensor, nn, autograd
 import matplotlib.pyplot as plt
 from michinaga.src import teanet
 from tqdm import tqdm
 import numpy as np
-
-
+from random_data import random_data
+from torchmetrics import Accuracy
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #device = torch.device('cpu')
@@ -27,7 +27,6 @@ def train(model, params):
             the parameters to construct the training process
     """
 
-    
     x_train_tweets = params['x_tweet_train']
     x_price_train = params['x_price_train']
     y_train = params['y_train']
@@ -36,40 +35,59 @@ def train(model, params):
     x_test_price = params['x_price_test']
     y_test = params['y_test']
 
-
     epochs = params['epochs']
     batch_size = params['batch_size']
     learning_rate = params['learning_rate']
     model.to(device)
     adam = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    # learning rate schedulers, so that the saddle point doesn't debilitate model performance
+
+    exponential = torch.optim.lr_scheduler.ExponentialLR(adam, gamma=0.95)
+    cosine = torch.optim.lr_scheduler.CosineAnnealingLR(adam, epochs)
+
     #loss_fn = nn.CrossEntropyLoss()
     loss_fn = nn.BCELoss()
     training_loss_over_epochs = []
+    accuracy = Accuracy(task='multiclass', num_classes=2).to(device)
 
     """
     TRAIN
     """
-    
+    # we should measure the training accuracy
     for e in tqdm(range(epochs)):
 
         train_index = 0
         training_loss = []
+        total_acc = 0
 
-        while(train_index < len(x_train_tweets) - 1):
+        while(train_index < len(x_train_tweets) - batch_size):
             model.zero_grad()
             x_input = [x_train_tweets[train_index:train_index+batch_size].view(batch_size, 5, 100).to(device), x_price_train[train_index:train_index+batch_size].view(batch_size, 5, 4).to(device)]
             out = model.forward(x_input)
             loss = loss_fn(out.view(batch_size, 2).float(), y_train[train_index:train_index+batch_size].float().to(device))
             training_loss.append(loss.item())
-            adam.zero_grad()
-            loss.backward()
-            adam.step()
+            #print(loss.item())
+            # accuracy for training data
+            maximums = torch.max(out.view(batch_size, 2), dim = 1).indices
+            max_targets = torch.max(y_train[train_index:train_index+batch_size], dim = 1).indices
+            # here is the accuracy measurement
+            acc = accuracy(maximums.float().to(device), max_targets.float().to(device))
+            total_acc += (acc * batch_size)
+            # for debugging
+            with autograd.detect_anomaly():
+                adam.zero_grad()
+                loss.backward()
+                adam.step()
+
             train_index += batch_size
         print('\n')
         print('epoch: ', e)
+        print('training set accuracy: ', total_acc/train_index)
         print('loss total: ', sum(training_loss))
         print('\n')
         training_loss_over_epochs.append(training_loss)
+        #exponential.step()
+        cosine.step()
 
     torch.save(model, 'trained_teanet.pt')
     
@@ -78,7 +96,7 @@ def train(model, params):
 
     For the first trial, I just want to see the basic accuracy. The more acute measurements can be implemented later. 
     """
-    model = torch.load('trained_teanet.pt')
+    #model = torch.load('trained_teanet.pt')
     model.eval()
 
     with torch.no_grad():
@@ -137,9 +155,18 @@ def plot(arr_list, legend_list, color_list, ylabel, fig_title):
 if __name__ == "__main__":
 
     batch_size = 5
-    #model = teanet(5, 100, 2, batch_size, 5)
-    model = torch.load('teanetUlt.pt')
+    randomize = random_data()
+    accuracy_over_time = []
+   # model = teanet(5, 100, 2, batch_size, 5)
+    model = torch.load('trained_teanet.pt')
 
+    """
+    This call randomizes the data, so that each epoch set is trained on a different set of train and test
+    data
+    """
+
+    randomize.forward()
+    
     params = {
         'x_tweet_train': torch.load('x_train_tweets.pt'),
         'x_price_train': torch.load('x_train_prices.pt'), 
@@ -153,18 +180,4 @@ if __name__ == "__main__":
     }
 
     training_loss, accuracy = train(model, params)
-
-    #training_loss = np.array(training_loss)
-    
-    plot([training_loss[9]], ['teanet'], ['r'], 'loss', 'Loss performance over time')
-
-
-
-        
-
-            
-
-            
-
-
-
+    accuracy_over_time.append(accuracy)
