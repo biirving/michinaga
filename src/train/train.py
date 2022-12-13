@@ -9,7 +9,7 @@ from michinaga.src import teanet
 from tqdm import tqdm
 import numpy as np
 from random_data import random_data
-from torchmetrics import Accuracy
+from torchmetrics import Accuracy, MatthewsCorrCoef
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #device = torch.device('cpu')
@@ -49,6 +49,8 @@ def train(model, params):
     loss_fn = nn.BCELoss()
     training_loss_over_epochs = []
     accuracy = Accuracy(task='multiclass', num_classes=2).to(device)
+    mcc = MatthewsCorrCoef(task='binary').to(device)
+
 
     """
     TRAIN
@@ -59,6 +61,7 @@ def train(model, params):
         train_index = 0
         training_loss = []
         total_acc = 0
+        total_mc = 0
 
         while(train_index < len(x_train_tweets) - batch_size):
             model.zero_grad()
@@ -72,17 +75,23 @@ def train(model, params):
             max_targets = torch.max(y_train[train_index:train_index+batch_size], dim = 1).indices
             # here is the accuracy measurement
             acc = accuracy(maximums.float().to(device), max_targets.float().to(device))
+            mc = mcc(maximums.float().to(device), max_targets.float().to(device))
+            total_mc += mc
             total_acc += (acc * batch_size)
             # for debugging
-            with autograd.detect_anomaly():
-                adam.zero_grad()
-                loss.backward()
-                adam.step()
+            #with autograd.detect_anomaly():
+            adam.zero_grad()
+            loss.backward()
+            adam.step()
 
             train_index += batch_size
         print('\n')
         print('epoch: ', e)
         print('training set accuracy: ', total_acc/train_index)
+        # the average matthews correlation coefficient?
+        print('matthews correlation coefficient', total_mc/train_index)
+        # the total matthews correlation coefficient
+        print('total matthews correlation coefficient', total_mc)
         print('loss total: ', sum(training_loss))
         print('\n')
         training_loss_over_epochs.append(training_loss)
@@ -165,7 +174,7 @@ if __name__ == "__main__":
     data
     """
 
-    randomize.forward()
+    #randomize.forward()
     
     params = {
         'x_tweet_train': torch.load('x_train_tweets.pt'),
@@ -175,7 +184,7 @@ if __name__ == "__main__":
         'x_price_test': torch.load('x_test_prices.pt'),
         'y_test': torch.load('y_test.pt'),
         'batch_size': batch_size,
-        'epochs': 10,
+        'epochs': 100,
         'learning_rate': 1e-3
     }
 
