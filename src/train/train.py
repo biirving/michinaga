@@ -61,7 +61,7 @@ def train(model, params):
         train_index = 0
         training_loss = []
         total_acc = 0
-        total_mc = 0.0
+        total_mc = 0
 
         while(train_index < len(x_train_tweets) - batch_size):
             model.zero_grad()
@@ -76,7 +76,7 @@ def train(model, params):
             # here is the accuracy measurement
             acc = accuracy(maximums.float().to(device), max_targets.float().to(device))
             mc = mcc(maximums.float().to(device), max_targets.float().to(device))
-            total_mc += mc
+            #total_mc += mc
             total_acc += (acc * batch_size)
             # for debugging
             #with autograd.detect_anomaly():
@@ -89,16 +89,16 @@ def train(model, params):
         print('epoch: ', e)
         print('training set accuracy: ', total_acc/train_index)
         # the average matthews correlation coefficient?
-        print('matthews correlation coefficient', total_mc/train_index)
+       # print('matthews correlation coefficient', total_mc/train_index)
         # the total matthews correlation coefficient
-        print('total matthews correlation coefficient', total_mc)
+       # print('total matthews correlation coefficient', total_mc)
         print('loss total: ', sum(training_loss))
         print('\n')
         training_loss_over_epochs.append(training_loss)
         #exponential.step()
         cosine.step()
 
-    torch.save(model, 'trained_teanet.pt')
+    torch.save(model, 'trained_teanet_lag10.pt')
     
     """
     EVALUATE
@@ -112,16 +112,26 @@ def train(model, params):
         num_correct = 0
         tot = 0
         model.setBatchSize(1)
+        actuals = []
+        outputs = []
         for y in tqdm(range(int(y_test.shape[0]))):
             out = model.forward([x_test_tweets[y].view(1, 5, 100).to(device), x_test_price[y].view(1, 5, 4).to(device)])
             actual = torch.max(y_test[y].to(device), dim = 0).indices
+            # want it to be one big list
+            
             out_index = torch.max(out, dim = 2).indices
             if(actual.item() == out_index.item()):
                 num_correct += 1
             tot += 1
-
+            # mcc coefficient from these list
+            actuals.append(actual.item())
+            outputs.append(out_index.item())
+    act = torch.tensor(actuals).float().to(device)
+    outs = torch.tensor(outputs).float().to(device)
+    mat = mcc(outs, act)
     accuracy = num_correct / tot
     print("Basic accuracy on test set: ", accuracy)
+    print("mcc: ", mat)
     return training_loss_over_epochs, accuracy
 
 def plot(arr_list, legend_list, color_list, ylabel, fig_title):
@@ -163,28 +173,28 @@ def plot(arr_list, legend_list, color_list, ylabel, fig_title):
 
 if __name__ == "__main__":
 
-    batch_size = 5
+    batch_size = 8
     randomize = random_data()
     accuracy_over_time = []
-   # model = teanet(5, 100, 2, batch_size, 5)
-    model = torch.load('trained_teanet.pt')
+    model = teanet(5, 100, 2, batch_size, 10, 30, 5)
+    #model = torch.load('trained_teanet.pt')
 
     """
     This call randomizes the data, so that each epoch set is trained on a different set of train and test
     data
     """
 
-    #randomize.forward()
+    randomize.forward()
     
     params = {
-        'x_tweet_train': torch.load('x_train_tweets.pt'),
-        'x_price_train': torch.load('x_train_prices.pt'), 
-        'y_train': torch.load('y_train.pt'),
-        'x_tweet_test': torch.load('x_test_tweets.pt'),
-        'x_price_test': torch.load('x_test_prices.pt'),
-        'y_test': torch.load('y_test.pt'),
+        'x_tweet_train': torch.load('x_train_tweets_10.pt'),
+        'x_price_train': torch.load('x_train_prices_10.pt'), 
+        'y_train': torch.load('y_train_10.pt'),
+        'x_tweet_test': torch.load('x_test_tweets_10.pt'),
+        'x_price_test': torch.load('x_test_prices_10.pt'),
+        'y_test': torch.load('y_test_10.pt'),
         'batch_size': batch_size,
-        'epochs': 100,
+        'epochs': 50,
         'learning_rate': 1e-3
     }
 
