@@ -68,7 +68,7 @@ args:
 
 
 class teanet(nn.Module):
-    def __init__(self, num_heads, dim, num_classes, batch_size, lag) -> None:
+    def __init__(self, num_heads, dim, num_classes, batch_size, lag, num_encoders, num_lstms) -> None:
         super().__init__()
         self.dim = dim
         self.num_classes = num_classes
@@ -84,11 +84,9 @@ class teanet(nn.Module):
         consider increasing the number of encoder blocks, to stabilize performance.
         Testing with 6 encoders
         """
-        num_encoders = 6
         self.textEncoder = nn.ModuleList([textEncoder(num_heads, dim), nn.LayerNorm(dim)] * num_encoders)
-        num_lstms = 1
-        self.lstm = nn.LSTM(input_size = 104, hidden_size = 5, num_layers = num_lstms)
-        self.temporal = nn.Sequential(nn.LayerNorm(109), temporal(109, num_classes, batch_size))
+        self.lstm = nn.LSTM(input_size = 104, hidden_size = lag, num_layers = num_lstms)
+        self.temporal = nn.Sequential(nn.LayerNorm(109), temporal(109, num_classes, batch_size, lag))
 
     """
     This should be dynamic based on the input from the user

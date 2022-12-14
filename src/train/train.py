@@ -61,7 +61,7 @@ def train(model, params):
         train_index = 0
         training_loss = []
         total_acc = 0
-        total_mc = 0
+        total_mc = 0.0
 
         while(train_index < len(x_train_tweets) - batch_size):
             model.zero_grad()
