@@ -74,7 +74,6 @@ class teanet(nn.Module):
         self.num_classes = num_classes
         self.pos_embed = nn.Parameter(torch.randn(1, lag, dim))
         self.price_pos_embed = None
-
         self.lag = lag
         self.batch_size = batch_size
         self.dropout = nn.Dropout(p = 0.)
@@ -85,7 +84,7 @@ class teanet(nn.Module):
         Testing with 6 encoders
         """
         self.textEncoder = nn.ModuleList([textEncoder(num_heads, dim), nn.LayerNorm(dim)] * num_encoders)
-        self.lstm = nn.LSTM(input_size = 104, hidden_size = lag, num_layers = num_lstms)
+        self.lstm = nn.LSTM(input_size = 104, hidden_size = 5, num_layers = num_lstms)
         self.temporal = nn.Sequential(nn.LayerNorm(109), temporal(109, num_classes, batch_size, lag))
 
     """

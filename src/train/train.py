@@ -38,6 +38,8 @@ def train(model, params):
     epochs = params['epochs']
     batch_size = params['batch_size']
     learning_rate = params['learning_rate']
+
+    lag = params['lag']
     model.to(device)
     adam = torch.optim.Adam(model.parameters(), lr=learning_rate)
     # learning rate schedulers, so that the saddle point doesn't debilitate model performance
@@ -65,7 +67,7 @@ def train(model, params):
 
         while(train_index < len(x_train_tweets) - batch_size):
             model.zero_grad()
-            x_input = [x_train_tweets[train_index:train_index+batch_size].view(batch_size, 5, 100).to(device), x_price_train[train_index:train_index+batch_size].view(batch_size, 5, 4).to(device)]
+            x_input = [x_train_tweets[train_index:train_index+batch_size].view(batch_size, lag, 100).to(device), x_price_train[train_index:train_index+batch_size].view(batch_size, lag, 4).to(device)]
             out = model.forward(x_input)
             loss = loss_fn(out.view(batch_size, 2).float(), y_train[train_index:train_index+batch_size].float().to(device))
             training_loss.append(loss.item())
@@ -98,7 +100,7 @@ def train(model, params):
         #exponential.step()
         cosine.step()
 
-    torch.save(model, 'trained_teanet_lag10.pt')
+    torch.save(model, 'trained_teanet.pt')
     
     """
     EVALUATE
@@ -115,7 +117,7 @@ def train(model, params):
         actuals = []
         outputs = []
         for y in tqdm(range(int(y_test.shape[0]))):
-            out = model.forward([x_test_tweets[y].view(1, 5, 100).to(device), x_test_price[y].view(1, 5, 4).to(device)])
+            out = model.forward([x_test_tweets[y].view(1, lag, 100).to(device), x_test_price[y].view(1, lag, 4).to(device)])
             actual = torch.max(y_test[y].to(device), dim = 0).indices
             # want it to be one big list
             
@@ -172,11 +174,11 @@ def plot(arr_list, legend_list, color_list, ylabel, fig_title):
     plt.show()
 
 if __name__ == "__main__":
-
+    lag = 5
     batch_size = 8
-    randomize = random_data()
+    randomize = random_data(lag)
     accuracy_over_time = []
-    model = teanet(5, 100, 2, batch_size, 10, 30, 5)
+    model = teanet(5, 100, 2, batch_size, lag, 100, 50)
     #model = torch.load('trained_teanet.pt')
 
     """
@@ -184,17 +186,18 @@ if __name__ == "__main__":
     data
     """
 
-    randomize.forward()
+    #randomize.forward()
     
     params = {
-        'x_tweet_train': torch.load('x_train_tweets_10.pt'),
-        'x_price_train': torch.load('x_train_prices_10.pt'), 
-        'y_train': torch.load('y_train_10.pt'),
-        'x_tweet_test': torch.load('x_test_tweets_10.pt'),
-        'x_price_test': torch.load('x_test_prices_10.pt'),
-        'y_test': torch.load('y_test_10.pt'),
+        'x_tweet_train': torch.load('x_train_tweets.pt'),
+        'x_price_train': torch.load('x_train_prices.pt'), 
+        'y_train': torch.load('y_train.pt'),
+        'x_tweet_test': torch.load('x_test_tweets.pt'),
+        'x_price_test': torch.load('x_test_prices.pt'),
+        'y_test': torch.load('y_test.pt'),
+        'lag': lag,
         'batch_size': batch_size,
-        'epochs': 50,
+        'epochs': 100,
         'learning_rate': 1e-3
     }
 

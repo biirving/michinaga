@@ -46,11 +46,14 @@ class dataPrep:
     def createTensor(self, tensor, dim):
         toReturn = None
         counter = 0
+        tensor_list = []
         for t in tensor:
             if(counter == 0):
-                toReturn = t.view(1, dim)
+                toReturn = t.view(1, t.shape[0], dim)
+                tensor_list.append(toReturn)
             else:
-                toReturn = torch.cat((toReturn, t.view(1, dim)), 0)
+                #toReturn = torch.cat((toReturn, t.view(1, t.shape[0], dim)), 0)
+                tensor_list.append(t.view(1, t.shape[0], dim))
             counter += 1
         return toReturn
 
@@ -107,14 +110,11 @@ class dataPrep:
 
             num_tweets = len([entry for entry in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, entry))])
 
-            if(num_tweets < 5):
+            if(num_tweets < self.lag_period):
                 # we skip this ticker, because there does not exist viable data
                 continue
 
-            # we want to accumulate a datapoint with 5 days, and a tweet vector 
-            # for each of those five days
-            # if each tweet is an average, that means each day only has ONE tweet vector associated with it
-            # which means that we can process more quickly through the forward pass of the teanet model
+            
             for x in range(len(price_file) - 1, self.lag_period + 1, - 1):
 
                 # x_vals should be a tensor
@@ -132,7 +132,7 @@ class dataPrep:
                 # we go from back to front in terms of moving through the file
                 tweets_checked = 0
 
-                while(len(x_vals) < 5 and tweets_checked <= num_tweets and y > 0):
+                while(len(x_vals) < self.lag_period and tweets_checked <= num_tweets and y > 0):
                     price_to_consider = price_file[y]
                     prices = price_to_consider.split()
                     # here we check if the price day has a corresponding tweet
@@ -166,15 +166,22 @@ class dataPrep:
                         # I don't want dynamic shaping in the model itself <-- could mess with the weights in a strange way
                         # but wouldn't this be better
                         # for t in range(len(text)):
-                        for t in range(1):
+                        # just going to use the first value
+                        # is there a better way to extract meaningful information, by having one
+                        # 'tweet' vector for each price input?
+                        # instead, we could just set a certain 'k' parameter to serve as a
+                        # required number of tweets for a given day
+                        # should we just append them all, and use pooling?
+                        for t in range(len(text)):
                             tweet_dict = json.loads(text[t])
                             input = tweet_dict['text']
                             # how do we check for symbols in the tweet?
                             embedded_tweet = self.wordembedder.embed(input)
                             if(t == 0):
-                                tweets = embedded_tweet
+                                tweets = embedded_tweet.view(1, 100)
                             else:
-                                tweets += embedded_tweet
+                                tweets = torch.cat((tweets, embedded_tweet.view(1, 100)), dim = 0)
+                                
                         # taking the average of the tweets
                         tweets /= len(tweets)
                         x_vals.append([tweets, torch.tensor([float(x) for x in prices[1:5]]).to(device)])
@@ -193,14 +200,15 @@ class dataPrep:
                     if(movement_ratio <= -0.005 or movement_ratio > 0.0055):
                         # self.x_data.append(x_vals)
                         # should this instead be a tensor of tensors
+                        print(tweet_vals[0].shape[0])
                         weets = self.createTensor(tweet_vals, 100)
                         rices = self.createTensor(price_vectors, 4)
                         if(self.tweet_data == None):
-                            self.tweet_data = weets.view(1, 5, 100)
-                            self.price_data = rices.view(1, 5, 4)
+                            self.tweet_data = weets.view(1, self.lag_period, 100)
+                            self.price_data = rices.view(1, self.lag_period, 4)
                         else:
-                            self.tweet_data = torch.cat((self.tweet_data, weets.view(1, 5, 100)), 0)
-                            self.price_data = torch.cat((self.price_data, rices.view(1, 5, 4)))
+                            self.tweet_data = torch.cat((self.tweet_data, weets.view(1, self.lag_period, 100)), 0)
+                            self.price_data = torch.cat((self.price_data, rices.view(1, self.lag_period, 4)))
 
                         #self.x_data.append(self.createTensor(price_vectors, 4))
                         # here we should store the corresponding ticker along with the date in a tuple form
@@ -213,19 +221,9 @@ class dataPrep:
                     x = price_values_indices[1]
         return [self.tweet_data, self.price_data], self.createTensor(self.y_data, 2)
 
-
+# is average the best strategy to use
 okay = dataPrep(5, 'last', 'twitter', 'average', False)
 x_data, y_data = okay.returnData()
-torch.save(x_data[0], 'x_tweet_data.pt')
-torch.save(x_data[1], 'x_price_data.pt')
-torch.save(y_data, 'y_data.pt')
-
-
-
-
-
-
-
-
-        
-
+torch.save(x_data[0], 'x_tweet_data_10.pt')
+torch.save(x_data[1], 'x_price_data_10.pt')
+torch.save(y_data, 'y_data_10.pt')
