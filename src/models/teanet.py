@@ -76,6 +76,10 @@ class teanet(nn.Module):
         self.price_pos_embed = None
         self.lag = lag
         self.batch_size = batch_size
+
+        """
+        Research to implement?
+        """
         self.dropout = nn.Dropout(p = 0.)
     
 
