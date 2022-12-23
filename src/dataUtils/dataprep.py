@@ -49,6 +49,7 @@ class dataPrep:
         tensor_list = []
         for t in tensor:
             if(counter == 0):
+                # how to process a varying number of tweets
                 toReturn = t.view(1, t.shape[0], dim)
                 tensor_list.append(toReturn)
             else:

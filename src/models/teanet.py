@@ -67,9 +67,45 @@ args:
 """
 
 
+"""
+In this alternate version of the model, we are going to use a revamped version of
+the previous Tweet collection methodology. I want to use as much information as possible
+(namely, all the Tweets in the dataset). 
+
+How does the utility of this extend beyond the experiment? (practical use?)
+Data will always be imperfect in the real world. Thus, our model should be able to account
+for irregularity in terms of tensor size.
+
+The goal is to use adaptive pooling (and/or padding?) along with making the word embeddings part of the model
+itself (so that everything can be trained together?) <-- how do you train word embeddings?
+
+One alternative to this dataprep alteration would be to instead use a determined number of Tweets (compare?)
+
+
+How I really want to test all of these alternatives: on live fucking data tbh
+"""
+
 class teanet(nn.Module):
-    def __init__(self, num_heads, dim, num_classes, batch_size, lag, num_encoders, num_lstms) -> None:
+    def __init__(self, num_heads, dim, num_classes, batch_size, lag, num_encoders, num_lstms, word_embed) -> None:
         super().__init__()
+
+        """
+        How can the FLAIR embeddings be trained? As LMs?
+        """
+        self.word_embed = word_embed
+
+        """
+        Experiment:
+        max pooling / average pooling?
+
+        The effectiveness of both methods is obviously different than the advantages found in convlutional nn's
+        which are specialized for image processing
+
+        We want to project the bank of tweets into one vector for processing by the model
+        """
+        self.adaptive_pooling = nn.AdaptiveMaxPool2d((1, dim))
+
+
         self.dim = dim
         self.num_classes = num_classes
         self.pos_embed = nn.Parameter(torch.randn(1, lag, dim))
@@ -82,7 +118,6 @@ class teanet(nn.Module):
         """
         self.dropout = nn.Dropout(p = 0.)
     
-
         """
         consider increasing the number of encoder blocks, to stabilize performance.
         Testing with 6 encoders
@@ -98,7 +133,31 @@ class teanet(nn.Module):
         self.batch_size = new
         self.temporal[1].setBatchSize(new)
 
+
+    """
+    The forward pass will be different. 
+
+    Input format: list of list of tensors?
+    because we will be processing a lag period for whatever the appropriate batch size is determined to be
+
+    Funny, that so much of the model architecture is determined by the shape that the data takes,
+    especially in the early stages.
+    """
     def forward(self, input):
+        # each lag period + prediction
+        for x_val in input:
+            # iterating over each day in the specific x value
+            for day in x_val:
+                # wait, so are we training the word embeddings and the
+                # adaptive pooling in tandem? 
+                # That seems so inefficient (but will be closer to reality) <-- should be a separate compoennt in
+                # the pipeline, no?
+                # there needs to be another for loop?
+                embedded = self.word_embed(day[0])
+                
+
+
+
         toFeed = input[0] + repeat(self.pos_embed, 'n d w -> (b n) d w', b = self.batch_size)
         for text in self.textEncoder:
             toFeed = text.forward(toFeed)
