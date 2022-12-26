@@ -86,13 +86,13 @@ How I really want to test all of these alternatives: on live fucking data tbh
 """
 
 class teanet(nn.Module):
-    def __init__(self, num_heads, dim, num_classes, batch_size, lag, num_encoders, num_lstms, word_embed) -> None:
+    def __init__(self, num_heads, dim, num_classes, batch_size, lag, num_encoders, num_lstms) -> None:
         super().__init__()
 
         """
         How can the FLAIR embeddings be trained? As LMs?
         """
-        self.word_embed = word_embed
+        #self.word_embed = word_embed
 
         """
         Experiment:
@@ -114,7 +114,7 @@ class teanet(nn.Module):
         self.batch_size = batch_size
 
         """
-        Research to implement?
+        Research to implement? <-- what is dropout, what parameter values should I use, etc. 
         """
         self.dropout = nn.Dropout(p = 0.)
     
@@ -143,22 +143,25 @@ class teanet(nn.Module):
     Funny, that so much of the model architecture is determined by the shape that the data takes,
     especially in the early stages.
     """
+
     def forward(self, input):
-        # each lag period + prediction
-        for x_val in input:
-            # iterating over each day in the specific x value
+        batch_of_tweets = None
+        # iterate through the batch
+        for x_val in input[0]:
+            processed_tweets = None
+            # iterate through the days in the x_value
             for day in x_val:
-                # wait, so are we training the word embeddings and the
-                # adaptive pooling in tandem? 
-                # That seems so inefficient (but will be closer to reality) <-- should be a separate compoennt in
-                # the pipeline, no?
-                # there needs to be another for loop?
-                embedded = self.word_embed(day[0])
-                
-
-
-
-        toFeed = input[0] + repeat(self.pos_embed, 'n d w -> (b n) d w', b = self.batch_size)
+                processed = self.adaptive_pooling(day)
+                if(processed_tweets == None):
+                    processed_tweets = processed
+                else:
+                    processed_tweets = torch.cat((processed_tweets, processed), 1)
+            if(batch_of_tweets == None):
+                batch_of_tweets = processed_tweets.view(1, self.lag, self.dim)
+            else:
+                batch_of_tweets = torch.cat((batch_of_tweets, processed_tweets.view(1, self.lag, self.dim)), 0)
+        #print(batch_of_tweets.shape)
+        toFeed = batch_of_tweets + repeat(self.pos_embed, 'n d w -> (b n) d w', b = self.batch_size)
         for text in self.textEncoder:
             toFeed = text.forward(toFeed)
         lstm_in = torch.cat((toFeed, input[1]), 2)

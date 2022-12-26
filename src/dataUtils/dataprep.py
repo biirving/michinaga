@@ -13,6 +13,18 @@ It would be ideal to use the Twitter api in order to grab live data <-- would re
 
 """
 
+
+
+"""
+In this dataprep_alt branch, I will distill the tweets into a list of lists. 
+(This will make batch processing lower, but will lead to the model's ability to handle all of the tweet information)
+An adaptive pooling layer will prove different to the averaging methods I have previously employed, for this layer will
+benefit from back-prop.
+
+Also some of the papers accounted for multiple symbols present in a phrase, and thus used a bidirectional 
+GRU (general reccurrent unit) to create informational dependencies surrounding the said symbol. 
+"""
+
 # Training data
 import json
 import wordEmbedding
@@ -33,8 +45,8 @@ class dataPrep:
         #self.price_data = []
         #self.price_dates = []
         #self.tweet_data = []  
-        self.tweet_data = None
-        self.price_data = None
+        self.tweet_data = []
+        self.price_data = []
         self.x_data = []
         self.y_data = []
         self.lag_period = lag_period
@@ -50,11 +62,11 @@ class dataPrep:
         for t in tensor:
             if(counter == 0):
                 # how to process a varying number of tweets
-                toReturn = t.view(1, t.shape[0], dim)
-                tensor_list.append(toReturn)
+                toReturn = t.view(1, 1, dim)
+                #tensor_list.append(toReturn)
             else:
-                #toReturn = torch.cat((toReturn, t.view(1, t.shape[0], dim)), 0)
-                tensor_list.append(t.view(1, t.shape[0], dim))
+                toReturn = torch.cat((toReturn, t.view(1, 1, dim)), 0)
+                #tensor_list.append(t.view(1, t.shape[0], dim))
             counter += 1
         return toReturn
 
@@ -92,13 +104,16 @@ class dataPrep:
         for f in filenames:
             counter += 1
             print(counter)
-            ticker = f[52:]
+            # different ticker values on windows and mac
+            ticker = f[63:]
+            #ticker = f[52:]
             tickername = ticker.split('.')[0]
             open_file = open(f)
             price_file = open_file.readlines()
 
             # check if there are even enough tweet days for one data point
             if platform == "darwin":
+                print(str(tickername))
                 dir_path = r'/Users/benjaminirving/Desktop/mlWalk/michinaga/src/data/preprocessed/' + str(tickername)
             elif platform == "win64":
                 dir_path = r'C:\Users\Benjamin\Desktop\ml\stocknet-dataset\preprocessed\'' + str(tickername)
@@ -161,22 +176,10 @@ class dataPrep:
                         elif platform == 'linux' or platform == 'linux2':
                             tweet_file = open(r'/home/benjamin/Desktop/ml/michinaga/src/data/preprocessed/' + str(tickername) + '/' + str(date))
 
-                        # the tweets from this specific date
                         text = tweet_file.readlines()
-                        # we are going to be doing an average, for some days only have 1 tweet. 
-                        # I don't want dynamic shaping in the model itself <-- could mess with the weights in a strange way
-                        # but wouldn't this be better
-                        # for t in range(len(text)):
-                        # just going to use the first value
-                        # is there a better way to extract meaningful information, by having one
-                        # 'tweet' vector for each price input?
-                        # instead, we could just set a certain 'k' parameter to serve as a
-                        # required number of tweets for a given day
-                        # should we just append them all, and use pooling?
                         for t in range(len(text)):
                             tweet_dict = json.loads(text[t])
                             input = tweet_dict['text']
-                            # how do we check for symbols in the tweet?
                             embedded_tweet = self.wordembedder.embed(input)
                             if(t == 0):
                                 tweets = embedded_tweet.view(1, 100)
@@ -184,7 +187,10 @@ class dataPrep:
                                 tweets = torch.cat((tweets, embedded_tweet.view(1, 100)), dim = 0)
                                 
                         # taking the average of the tweets
-                        tweets /= len(tweets)
+                        #tweets /= len(tweets)
+                        # In this alternative data consolidation, I will instead append the varying number of tweets
+                        # in a simple list format
+
                         x_vals.append([tweets, torch.tensor([float(x) for x in prices[1:5]]).to(device)])
                         tweet_vals.append(tweets)
                         price_vectors.append(torch.tensor([float(x) for x in prices[1:5]]).to(device))
@@ -201,16 +207,18 @@ class dataPrep:
                     if(movement_ratio <= -0.005 or movement_ratio > 0.0055):
                         # self.x_data.append(x_vals)
                         # should this instead be a tensor of tensors
-                        print(tweet_vals[0].shape[0])
-                        weets = self.createTensor(tweet_vals, 100)
-                        rices = self.createTensor(price_vectors, 4)
+                        #weets = self.createTensor(tweet_vals, 100)
+                        #rices = self.createTensor(price_vectors, 4)
+                        self.tweet_data.append(tweet_vals)
+                        self.price_data.append(price_vectors)
+                        """
                         if(self.tweet_data == None):
                             self.tweet_data = weets.view(1, self.lag_period, 100)
                             self.price_data = rices.view(1, self.lag_period, 4)
                         else:
                             self.tweet_data = torch.cat((self.tweet_data, weets.view(1, self.lag_period, 100)), 0)
                             self.price_data = torch.cat((self.price_data, rices.view(1, self.lag_period, 4)))
-
+                        """
                         #self.x_data.append(self.createTensor(price_vectors, 4))
                         # here we should store the corresponding ticker along with the date in a tuple form
                         if(movement_ratio > 0.0055):
@@ -220,11 +228,15 @@ class dataPrep:
                     # we set the new price value indice to one to the left of the previous, where to
                     # begin our next value from
                     x = price_values_indices[1]
-        return [self.tweet_data, self.price_data], self.createTensor(self.y_data, 2)
+            # just test will apple data
+            # why is this not working
+            break
+        return np.array([self.tweet_data, self.price_data]), self.createTensor(self.y_data, 2)
 
 # is average the best strategy to use
-okay = dataPrep(5, 'last', 'twitter', 'average', False)
-x_data, y_data = okay.returnData()
-torch.save(x_data[0], 'x_tweet_data_10.pt')
-torch.save(x_data[1], 'x_price_data_10.pt')
-torch.save(y_data, 'y_data_10.pt')
+#okay = dataPrep(5, 'last', 'twitter', 'average', False)
+#x_data, y_data = okay.returnData()
+#print(x_data[0])
+#torch.save(x_data[0], 'x_tweet_data.pt')
+#torch.save(x_data[1], 'x_price_data.pt')
+#torch.save(y_data, 'y_data.pt')
