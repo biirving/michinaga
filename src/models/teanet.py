@@ -151,7 +151,7 @@ class teanet(nn.Module):
             processed_tweets = None
             # iterate through the days in the x_value
             for day in x_val:
-                processed = self.adaptive_pooling(day)
+                processed = self.adaptive_pooling(day.view(1, day.shape[0], day.shape[1]))
                 if(processed_tweets == None):
                     processed_tweets = processed
                 else:
@@ -160,7 +160,6 @@ class teanet(nn.Module):
                 batch_of_tweets = processed_tweets.view(1, self.lag, self.dim)
             else:
                 batch_of_tweets = torch.cat((batch_of_tweets, processed_tweets.view(1, self.lag, self.dim)), 0)
-        #print(batch_of_tweets.shape)
         toFeed = batch_of_tweets + repeat(self.pos_embed, 'n d w -> (b n) d w', b = self.batch_size)
         for text in self.textEncoder:
             toFeed = text.forward(toFeed)

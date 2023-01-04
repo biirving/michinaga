@@ -46,7 +46,7 @@ class dataPrep:
         #self.price_dates = []
         #self.tweet_data = []  
         self.tweet_data = []
-        self.price_data = []
+        self.price_data = None
         self.x_data = []
         self.y_data = []
         self.lag_period = lag_period
@@ -58,7 +58,6 @@ class dataPrep:
     def createTensor(self, tensor, dim):
         toReturn = None
         counter = 0
-        tensor_list = []
         for t in tensor:
             if(counter == 0):
                 # how to process a varying number of tweets
@@ -208,17 +207,17 @@ class dataPrep:
                         # self.x_data.append(x_vals)
                         # should this instead be a tensor of tensors
                         #weets = self.createTensor(tweet_vals, 100)
-                        #rices = self.createTensor(price_vectors, 4)
+                        rices = self.createTensor(price_vectors, 4)
                         self.tweet_data.append(tweet_vals)
-                        self.price_data.append(price_vectors)
-                        """
-                        if(self.tweet_data == None):
-                            self.tweet_data = weets.view(1, self.lag_period, 100)
+                        #self.price_data.append(price_vectors)
+                        
+                        if(self.price_data == None):
+                            #self.tweet_data = weets.view(1, self.lag_period, 100)
                             self.price_data = rices.view(1, self.lag_period, 4)
                         else:
-                            self.tweet_data = torch.cat((self.tweet_data, weets.view(1, self.lag_period, 100)), 0)
+                            #self.tweet_data = torch.cat((self.tweet_data, weets.view(1, self.lag_period, 100)), 0)
                             self.price_data = torch.cat((self.price_data, rices.view(1, self.lag_period, 4)))
-                        """
+                        
                         #self.x_data.append(self.createTensor(price_vectors, 4))
                         # here we should store the corresponding ticker along with the date in a tuple form
                         if(movement_ratio > 0.0055):
@@ -228,10 +227,8 @@ class dataPrep:
                     # we set the new price value indice to one to the left of the previous, where to
                     # begin our next value from
                     x = price_values_indices[1]
-            # just test will apple data
-            # why is this not working
             break
-        return np.array([self.tweet_data, self.price_data]), self.createTensor(self.y_data, 2)
+        return np.array(self.tweet_data), self.price_data, self.createTensor(self.y_data, 2)
 
 # is average the best strategy to use
 #okay = dataPrep(5, 'last', 'twitter', 'average', False)
