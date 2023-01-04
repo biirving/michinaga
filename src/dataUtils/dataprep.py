@@ -102,7 +102,6 @@ class dataPrep:
         counter = 0
         for f in filenames:
             counter += 1
-            print(counter)
             # different ticker values on windows and mac
             ticker = f[63:]
             #ticker = f[52:]
@@ -112,7 +111,6 @@ class dataPrep:
 
             # check if there are even enough tweet days for one data point
             if platform == "darwin":
-                print(str(tickername))
                 dir_path = r'/Users/benjaminirving/Desktop/mlWalk/michinaga/src/data/preprocessed/' + str(tickername)
             elif platform == "win64":
                 dir_path = r'C:\Users\Benjamin\Desktop\ml\stocknet-dataset\preprocessed\'' + str(tickername)
@@ -227,13 +225,4 @@ class dataPrep:
                     # we set the new price value indice to one to the left of the previous, where to
                     # begin our next value from
                     x = price_values_indices[1]
-            break
         return np.array(self.tweet_data), self.price_data, self.createTensor(self.y_data, 2)
-
-# is average the best strategy to use
-#okay = dataPrep(5, 'last', 'twitter', 'average', False)
-#x_data, y_data = okay.returnData()
-#print(x_data[0])
-#torch.save(x_data[0], 'x_tweet_data.pt')
-#torch.save(x_data[1], 'x_price_data.pt')
-#torch.save(y_data, 'y_data.pt')
