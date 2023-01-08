@@ -1,5 +1,11 @@
 # michinaga
-Messing with transformers, in the context of wealth accumulation. Such is the manner in which the Fujiwara would have seen their potential.
+
+Transformers for trend analysis and binary price prediction. The model uses temporal attention and a LSTM to analyze the direction of a stock. Named for the greatest of the Fujiwara, and largely inspired by the paper cited below.
+
+Usage:
+```
+git clone 
+```
 
 Accuracy so far, on the binary price prediction from the 5-day lag coupled with the average tweet data:
 71.76% 
