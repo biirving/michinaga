@@ -8,6 +8,8 @@ The aim of the preliminary model is to make binary predictions about stocks, bas
 
 ## Model
 
+![alt text](https://github.com/Lysander-curiosum/michinaga/blob/main/model.png?raw=true)
+
 
 Accuracy so far, on the binary price prediction from the 5-day lag coupled with the average tweet data:
 71.76% 
