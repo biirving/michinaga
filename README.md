@@ -10,6 +10,7 @@ The aim of the preliminary model is to make binary predictions about stocks, bas
 
 ![alt text](https://github.com/Lysander-curiosum/michinaga/blob/main/model.png?raw=true)
 
+Above is the basic architecture of the model. The input consists of the embeddings for the Tweets in the 5 day lag period, which are processed using the FLAIR nlp library. These are fed into a traditional transformer encoder, the outputs of which are then concatenated with the price data. These are in turn processed by an LSTM, then finally fed into a temporal attention mechanism to predict an increase or decrease in the price.
 
 Accuracy so far, on the binary price prediction from the 5-day lag coupled with the average tweet data:
 71.76% 
