@@ -2,9 +2,7 @@
 
 Transformers for trend analysis and binary price prediction. The model uses temporal attention and a LSTM to analyze the direction of a stock. Named for the greatest of the Fujiwara, and largely inspired by the paper cited below.
 
-""
-Model
-""
+## Model
 
 Accuracy so far, on the binary price prediction from the 5-day lag coupled with the average tweet data:
 71.76% 
