@@ -187,6 +187,8 @@ if __name__ == "__main__":
     """
 
     #randomize.forward()
+
+    # change this to handle the new types of data storage
     
     params = {
         'x_tweet_train': torch.load('x_train_tweets.pt'),

@@ -144,9 +144,10 @@ class teanet(nn.Module):
     especially in the early stages.
     """
 
+    # this inference time is way too high
     def forward(self, input):
         batch_of_tweets = None
-        # iterate through the batch
+        # iterate through the batch (this is fucked)
         for x_val in input[0]:
             processed_tweets = None
             # iterate through the days in the x_value
