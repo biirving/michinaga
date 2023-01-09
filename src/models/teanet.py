@@ -4,7 +4,7 @@ The TEAnet model, for stock market analysis.
 
 from torch import nn, tensor
 import torch
-from michinaga.src.utils import classicAttention, temporal
+from michinaga.src.utils import classicAttention, temporal, pooling
 from einops import repeat
 
 class textEncoder(nn.Module):
@@ -103,8 +103,12 @@ class teanet(nn.Module):
 
         We want to project the bank of tweets into one vector for processing by the model
         """
-        self.adaptive_pooling = nn.AdaptiveMaxPool2d((1, dim))
 
+        """
+        Pretrained? Then we can insert it into the model, with a requires_grad = False? so that it is 
+        unaffected in the backwards pass? <-- Inference time is horrendous
+        """
+        self.pool = pooling(dim, lag)
 
         self.dim = dim
         self.num_classes = num_classes
@@ -146,25 +150,12 @@ class teanet(nn.Module):
 
     # this inference time is way too high
     def forward(self, input):
-        batch_of_tweets = None
-        # iterate through the batch (this is fucked)
-        for x_val in input[0]:
-            processed_tweets = None
-            # iterate through the days in the x_value
-            for day in x_val:
-                processed = self.adaptive_pooling(day.view(1, day.shape[0], day.shape[1]))
-                if(processed_tweets == None):
-                    processed_tweets = processed
-                else:
-                    processed_tweets = torch.cat((processed_tweets, processed), 1)
-            if(batch_of_tweets == None):
-                batch_of_tweets = processed_tweets.view(1, self.lag, self.dim)
-            else:
-                batch_of_tweets = torch.cat((batch_of_tweets, processed_tweets.view(1, self.lag, self.dim)), 0)
+        # this is cluttered. <-- could be trained separately perhaps?
+        batch_of_tweets = self.pool(input)
         toFeed = batch_of_tweets + repeat(self.pos_embed, 'n d w -> (b n) d w', b = self.batch_size)
         for text in self.textEncoder:
             toFeed = text.forward(toFeed)
         lstm_in = torch.cat((toFeed, input[1]), 2)
         out = self.lstm(lstm_in)
         final = self.temporal.forward(torch.cat((lstm_in, out[0]), 2))
-        return final
+        return final 
