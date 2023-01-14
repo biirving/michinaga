@@ -8,7 +8,7 @@ import torch
 from torch import nn, tensor
 
 
-# will we have a device setting here?
+# will we have a device setting here? to ensure that the data is being processed? (why is this bad practice)
 
 class pooling(nn.Module):
     """A pooling class, so that the forward pass in this variation of the teanet model is lest complex
