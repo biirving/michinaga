@@ -7,6 +7,7 @@ Class to deal with the pooling problem (differing amounts of tweets for various 
 import torch
 from torch import nn, tensor
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # will we have a device setting here? to ensure that the data is being processed? (why is this bad practice)
 
@@ -36,4 +37,4 @@ class pooling(nn.Module):
                 batch_of_tweets = processed_tweets.view(1, self.lag, self.dim)
             else:
                 batch_of_tweets = torch.cat((batch_of_tweets, processed_tweets.view(1, self.lag, self.dim)), 0)
-        return batch_of_tweets
+        return batch_of_tweets.to(device)
