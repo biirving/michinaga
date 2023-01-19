@@ -8,7 +8,7 @@ import torch
 from torch import nn, tensor
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+#device = torch.device("cpu")
 # will we have a device setting here? to ensure that the data is being processed? (why is this bad practice)
 
 class pooling(nn.Module):
