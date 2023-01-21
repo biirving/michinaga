@@ -180,8 +180,8 @@ class dataPrep:
                             if(t == 0):
                                 tweets = embedded_tweet.view(1, 100)
                             else:
-                                tweets = torch.cat((tweets, embedded_tweet.view(1, 100)), dim = 0)
-                                
+                                #tweets = torch.cat((tweets, embedded_tweet.view(1, 100)), dim = 0)
+                                tweets += embedded_tweet
                         # taking the average of the tweets
                         tweets /= len(tweets)
                         x_vals.append([tweets, torch.tensor([float(x) for x in prices[1:5]]).to(device)])
