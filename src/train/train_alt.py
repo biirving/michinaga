@@ -181,6 +181,7 @@ if __name__ == "__main__":
     randomize = random_data()
     accuracy_over_time = []
     model = teanet(5, 100, 2, batch_size, lag, 100, 50)
+    #toRun = torch.jit.trace(model)
     #model = torch.load('trained_teanet.pt')
 
     """
