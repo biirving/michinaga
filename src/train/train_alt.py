@@ -1,5 +1,5 @@
 """
-Lets train
+Lets train (with alternate tweet structure)
 """
 
 import torch
@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from michinaga.src import teanet
 from tqdm import tqdm
 import numpy as np
-from random_data import random_data
+from random_data_alt import random_data
 from torchmetrics import Accuracy, MatthewsCorrCoef
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -67,7 +67,10 @@ def train(model, params):
 
         while(train_index < len(x_train_tweets) - batch_size):
             model.zero_grad()
-            x_input = [x_train_tweets[train_index:train_index+batch_size].view(batch_size, lag, 100).to(device), x_price_train[train_index:train_index+batch_size].view(batch_size, lag, 4).to(device)]
+            # when training on gpu ensure that the device is set correctly
+            # a chunk of an np array cannot be set onto a device?
+            #x_input = [x_train_tweets[train_index:train_index+batch_size].to(device), x_price_train[train_index:train_index+batch_size].view(batch_size, lag, 4).to(device)]
+            x_input = [x_train_tweets[train_index:train_index+batch_size], x_price_train[train_index:train_index+batch_size].view(batch_size, lag, 4)]     
             out = model.forward(x_input)
             loss = loss_fn(out.view(batch_size, 2).float(), y_train[train_index:train_index+batch_size].float().to(device))
             training_loss.append(loss.item())
@@ -75,10 +78,11 @@ def train(model, params):
             # accuracy for training data
             maximums = torch.max(out.view(batch_size, 2), dim = 1).indices
             max_targets = torch.max(y_train[train_index:train_index+batch_size], dim = 1).indices
+
             # here is the accuracy measurement
             acc = accuracy(maximums.float().to(device), max_targets.float().to(device))
             mc = mcc(maximums.float().to(device), max_targets.float().to(device))
-            #total_mc += mc
+            total_mc += mc
             total_acc += (acc * batch_size)
             # for debugging
             #with autograd.detect_anomaly():
@@ -91,9 +95,9 @@ def train(model, params):
         print('epoch: ', e)
         print('training set accuracy: ', total_acc/train_index)
         # the average matthews correlation coefficient?
-       # print('matthews correlation coefficient', total_mc/train_index)
+        print('matthews correlation coefficient', total_mc/train_index)
         # the total matthews correlation coefficient
-       # print('total matthews correlation coefficient', total_mc)
+        print('total matthews correlation coefficient', total_mc)
         print('loss total: ', sum(training_loss))
         print('\n')
         training_loss_over_epochs.append(training_loss)
@@ -117,10 +121,8 @@ def train(model, params):
         actuals = []
         outputs = []
         for y in tqdm(range(int(y_test.shape[0]))):
-            out = model.forward([x_test_tweets[y].view(1, lag, 100).to(device), x_test_price[y].view(1, lag, 4).to(device)])
+            out = model.forward([x_test_tweets[y].to(device), x_test_price[y].view(1, lag, 4).to(device)])
             actual = torch.max(y_test[y].to(device), dim = 0).indices
-            # want it to be one big list
-            
             out_index = torch.max(out, dim = 2).indices
             if(actual.item() == out_index.item()):
                 num_correct += 1
@@ -175,10 +177,11 @@ def plot(arr_list, legend_list, color_list, ylabel, fig_title):
 
 if __name__ == "__main__":
     lag = 5
-    batch_size = 8
-    randomize = random_data(lag)
+    batch_size = 5
+    randomize = random_data()
     accuracy_over_time = []
     model = teanet(5, 100, 2, batch_size, lag, 100, 50)
+    #toRun = torch.jit.trace(model)
     #model = torch.load('trained_teanet.pt')
 
     """
@@ -186,22 +189,24 @@ if __name__ == "__main__":
     data
     """
 
-    #randomize.forward()
+   # randomize.forward()
 
     # change this to handle the new types of data storage
     
     params = {
-        'x_tweet_train': torch.load('x_train_tweets.pt'),
+        'x_tweet_train': np.load('x_train_tweets.pt.npy', allow_pickle=True),
         'x_price_train': torch.load('x_train_prices.pt'), 
         'y_train': torch.load('y_train.pt'),
-        'x_tweet_test': torch.load('x_test_tweets.pt'),
+        'x_tweet_test': np.load('x_test_tweets.pt.npy', allow_pickle=True),
         'x_price_test': torch.load('x_test_prices.pt'),
         'y_test': torch.load('y_test.pt'),
         'lag': lag,
         'batch_size': batch_size,
-        'epochs': 100,
+        'epochs': 1,
         'learning_rate': 1e-3
     }
 
     training_loss, accuracy = train(model, params)
     accuracy_over_time.append(accuracy)
+
+

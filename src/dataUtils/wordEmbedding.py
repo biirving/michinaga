@@ -33,6 +33,7 @@ Args:
         The input sentence
 """
 
+# why don't stacked word embeddings work???
 class wordEmbedding():
     def __init__(self, embedding:str, mode:str, stacked:bool):
         self.stacked = stacked
