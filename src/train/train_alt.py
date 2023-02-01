@@ -9,7 +9,7 @@ from michinaga.src import teanet
 from tqdm import tqdm
 import numpy as np
 from random_data_alt import random_data
-#from torchmetrics import Accuracy, MatthewsCorrCoef
+from torchmetrics import Accuracy, MatthewsCorrCoef
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #device = torch.device('cpu')
@@ -50,8 +50,8 @@ def train(model, params):
     #loss_fn = nn.CrossEntropyLoss()
     loss_fn = nn.BCELoss()
     training_loss_over_epochs = []
-  #  accuracy = Accuracy(task='multiclass', num_classes=2).to(device)
-  #  mcc = MatthewsCorrCoef(task='binary').to(device)
+    accuracy = Accuracy(task='multiclass', num_classes=2).to(device)
+    mcc = MatthewsCorrCoef(task='binary').to(device)
 
 
     """
@@ -80,10 +80,10 @@ def train(model, params):
             max_targets = torch.max(y_train[train_index:train_index+batch_size], dim = 1).indices
 
             # here is the accuracy measurement
-            #acc = accuracy(maximums.float().to(device), max_targets.float().to(device))
-            #mc = mcc(maximums.float().to(device), max_targets.float().to(device))
-            #total_mc += mc
-            #total_acc += (acc * batch_size)
+            acc = accuracy(maximums.float().to(device), max_targets.float().to(device))
+            mc = mcc(maximums.float().to(device), max_targets.float().to(device))
+            total_mc += mc
+            total_acc += (acc * batch_size)
             # for debugging
             #with autograd.detect_anomaly():
             adam.zero_grad()
@@ -93,11 +93,11 @@ def train(model, params):
             train_index += batch_size
         print('\n')
         print('epoch: ', e)
-        #print('training set accuracy: ', total_acc/train_index)
+        print('training set accuracy: ', total_acc/train_index)
         # the average matthews correlation coefficient?
-       # print('matthews correlation coefficient', total_mc/train_index)
+        print('matthews correlation coefficient', total_mc/train_index)
         # the total matthews correlation coefficient
-       # print('total matthews correlation coefficient', total_mc)
+        print('total matthews correlation coefficient', total_mc)
         print('loss total: ', sum(training_loss))
         print('\n')
         training_loss_over_epochs.append(training_loss)
@@ -181,6 +181,7 @@ if __name__ == "__main__":
     randomize = random_data()
     accuracy_over_time = []
     model = teanet(5, 100, 2, batch_size, lag, 100, 50)
+    #toRun = torch.jit.trace(model)
     #model = torch.load('trained_teanet.pt')
 
     """
