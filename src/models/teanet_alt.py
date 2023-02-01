@@ -4,7 +4,7 @@ The TEAnet model, for stock market analysis.
 
 from torch import nn, tensor
 import torch
-from michinaga.src.utils import classicAttention, temporal
+from michinaga.src.utils import classicAttention, temporal, pooling
 from einops import repeat
 
 class textEncoder(nn.Module):
@@ -64,18 +64,54 @@ args:
 """
 
 
+"""
+In this alternate version of the model, we are going to use a revamped version of
+the previous Tweet collection methodology. I want to use as much information as possible
+(namely, all the Tweets in the dataset). 
+How does the utility of this extend beyond the experiment? (practical use?)
+Data will always be imperfect in the real world. Thus, our model should be able to account
+for irregularity in terms of tensor size.
+The goal is to use adaptive pooling (and/or padding?) along with making the word embeddings part of the model
+itself (so that everything can be trained together?) <-- how do you train word embeddings?
+One alternative to this dataprep alteration would be to instead use a determined number of Tweets (compare?)
+How I really want to test all of these alternatives: on live fucking data tbh
+"""
+
 class teanet(nn.Module):
     def __init__(self, num_heads, dim, num_classes, batch_size, lag, num_encoders, num_lstms) -> None:
         super().__init__()
+
+        """
+        How can the FLAIR embeddings be trained? As LMs?
+        """
+        #self.word_embed = word_embed
+
+        """
+        Experiment:
+        max pooling / average pooling?
+        The effectiveness of both methods is obviously different than the advantages found in convlutional nn's
+        which are specialized for image processing
+        We want to project the bank of tweets into one vector for processing by the model
+        """
+
+        """
+        Pretrained? Then we can insert it into the model, with a requires_grad = False? so that it is 
+        unaffected in the backwards pass? <-- Inference time is horrendous
+        """
+        self.pool = pooling(dim, lag)
+
         self.dim = dim
         self.num_classes = num_classes
         self.pos_embed = nn.Parameter(torch.randn(1, lag, dim))
         self.price_pos_embed = None
         self.lag = lag
         self.batch_size = batch_size
+
+        """
+        Research to implement? <-- what is dropout, what parameter values should I use, etc. 
+        """
         self.dropout = nn.Dropout(p = 0.)
     
-
         """
         consider increasing the number of encoder blocks, to stabilize performance.
         Testing with 6 encoders
@@ -91,11 +127,23 @@ class teanet(nn.Module):
         self.batch_size = new
         self.temporal[1].setBatchSize(new)
 
+
+    """
+    The forward pass will be different. 
+    Input format: list of list of tensors?
+    because we will be processing a lag period for whatever the appropriate batch size is determined to be
+    Funny, that so much of the model architecture is determined by the shape that the data takes,
+    especially in the early stages.
+    """
+
+    # this inference time is way too high
     def forward(self, input):
-        toFeed = input[0] + repeat(self.pos_embed, 'n d w -> (b n) d w', b = self.batch_size)
+        # this is cluttered. <-- could be trained separately perhaps?
+        batch_of_tweets = self.pool(input)
+        toFeed = batch_of_tweets + repeat(self.pos_embed, 'n d w -> (b n) d w', b = self.batch_size)
         for text in self.textEncoder:
             toFeed = text.forward(toFeed)
         lstm_in = torch.cat((toFeed, input[1]), 2)
         out = self.lstm(lstm_in)
         final = self.temporal.forward(torch.cat((lstm_in, out[0]), 2))
-        return final
+        return final 
