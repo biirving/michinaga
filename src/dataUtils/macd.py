@@ -20,13 +20,9 @@ from ta.trend import MACD
 from ta.momentum import rsi
 import pandas as pd
 
-
-
-
 #adjusted closing prices
 googl_data = torch.load('sp500/GOOG.pt').numpy().astype('double')[:, 3]
 macd, macd_signal, macd_hist = talib.MACD(np.flip(googl_data)[0:100], fastperiod = 12, slowperiod = 26, signalperiod = 9)  
-
 
 #signal = talib.signal(googl_data)
 
@@ -35,7 +31,6 @@ def plot(x1, y1, x2, y2):
     plt.plot(x2, y2, label = 'Signal')
     plt.legend()
     plt.show()
-
 
 print(macd[33:].shape)
 nans = 0
@@ -48,10 +43,9 @@ print('nans: ', nans)
 
 #print(talib.get_functions())
 
-
 # macd attempt 2
 
-macd_2 = MACD(pd.DataFrame(np.flip(googl_data)[0:100], columns=['close'])['close'], window_fast=12,window_slow =26,window_sign=9, fillna=False)
+macd_2 = MACD(pd.DataFrame(np.flip(googl_data), columns=['close'])['close'], window_fast=12,window_slow =26,window_sign=9, fillna=False)
 macd_obj = macd_2.macd()
 macd_hist = macd_2.macd_diff()
 macd_sig = macd_2.macd_signal()
@@ -77,7 +71,6 @@ print('nans: ', nans)
 # let it rip
 # so, what is our general strategy? USE ATTENTION AND DEEP LEARNING TO CREATE PROFIT
 
-
 # rsi
 rsi_1 = rsi(pd.DataFrame(np.flip(googl_data)[0:100], columns=['close'])['close'], window=14, fillna = False)
 print(rsi_1[:].values)
@@ -92,5 +85,19 @@ so, how would we calculate these statistics on a dataset?
 
 """
 
+# we want to feed the non-nan values into the model.
+
+def extract_macd_rsi_data(macd, macd_signal, rsi):
+    # macd signal crossover combined with the fact that the the 5 previous rsi's have fallen below the lower threshold
+    # the lower threshold is 30
+    lower_threshold = 30
+    for x in range(rsi.shape[0]):
+        toCheck = rsi[x:x+5]
+        # then this rsi chuck is valid
+        # are we going to save these as tensors?
+        if(not max(toCheck) > 30):
+            # a BUY signal
+            if(macd[x - 1] < macd_signal[x - 1] and (macd[x] > macd_signal[x] and macd[x] > 0)):
 
 
+    pass
