@@ -117,22 +117,21 @@ class macdrsi:
                 # we will just demarcate with binary classifications?
                 # the formation of the input tensors:
                 # 𝑀𝑎𝑐𝑑𝑡−1, 𝑆𝑖𝑔𝑛𝑎𝑙𝑡−1, 𝑀𝑎𝑐𝑑𝑡, 𝑆𝑖𝑔𝑛𝑎𝑙𝑡, 𝑅𝑆𝐼𝑡 , 𝑅𝑆𝐼𝑡−1 , 𝑅𝑆𝐼𝑡−2 , 𝑅𝑆𝐼𝑡−3 , 𝑅𝑆𝐼𝑡−4, 𝑅𝑆𝐼𝑡−5 
-                day = torch.tensor([macd[x - 1], macd_signal[x-1], macd[x], macd_signal[x], toCheck])
+                day = torch.tensor([macd[x - 1], macd_signal[x-1], macd[x], macd_signal[x], toCheck[0], toCheck[1], toCheck[2], toCheck[3], toCheck[4]])
                 labels.append(torch.tensor([1, 0]).to(device))
                 if(macd is None):
                     macd_rsi = day
                     labels = torch.tensor([1, 0]).to(device).view(1, 2)
                 else:
-                    macd_rsi = torch.cat((macd, day.view(1, day.shape[0])), axis = 0)
+                    macd_rsi = torch.cat((macd_rsi, day.view(1, day.shape[0])), axis = 0)
                     labels = torch.cat((labels, torch.tensor([1, 0]).to(device).view(1, 2)), axis = 0)
             else:
-                print(toCheck.shape)
-                day = torch.tensor([macd[x - 1], macd_signal[x-1], macd[x], macd_signal[x], toCheck])
+                day = torch.tensor([macd[x - 1], macd_signal[x-1], macd[x], macd_signal[x], toCheck[0], toCheck[1], toCheck[2], toCheck[3], toCheck[4]])
                 if(macd is None):
                     macd_rsi = day
                     labels = torch.tensor([0, 1]).to(device)
                 else:
-                    macd_rsi = torch.cat((macd, day.view(1, day.shape[0])), axis = 0)
+                    macd_rsi = torch.cat((macd_rsi, day.view(1, day.shape[0])), axis = 0)
                     labels = torch.cat((labels, torch.tensor([0, 1]).to(device).view(1, 2)), axis = 0)
         return macd_rsi, labels
 

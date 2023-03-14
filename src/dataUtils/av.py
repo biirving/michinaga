@@ -32,7 +32,7 @@ progress = torch.load('progress.pt')
 start = progress.item()
 
 count = 0
-for name in sp500[start:]:
+for name in sp500[0:]:
     # sleep for 0.3 seconds between calls, 5 per second
     time.sleep(13)
     url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=' + name + '&outputsize=full&apikey=' + key
