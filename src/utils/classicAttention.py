@@ -1,28 +1,18 @@
-import numpy as np
-from pandas import array
 import torch
 from torch import BFloat16Storage, Tensor, bfloat16, nn
-from einops import rearrange, repeat
-from einops.layers.torch import Rearrange
+from einops import rearrange
 import math
-import PIL
-import sys, os 
 
 
-"""
-The purpose of this attention mechanism will be to process tweet data. 
-"""
-
-
-# need to adjust to deal with batches of batches (the nature of the teanet inputs)
 class classicAttention(nn.Module):
 
     # the default values in the original paper for num_heads and dim are 5 and 50 respectively
-    def __init__(self, num_heads, dim):
+    def __init__(self, num_heads, dim, droput=0.):
         super(classicAttention, self).__init__()
         self.num_heads = num_heads
         self.dim = dim
         self.Dh = int(self.dim/self.num_heads)
+        self.dropout = nn.Dropout(droput)
 
         self.softmax = nn.Softmax(dim = -1)
         # The matrix which multiplies all of the attention heads at the end
@@ -42,6 +32,9 @@ class classicAttention(nn.Module):
 
         # Softmax step, calculated for each row of each head
         inter = self.softmax(torch.matmul(q_mat, torch.transpose(k_mat, 2, 3)) / (math.sqrt(self.Dh) * self.num_heads))
+
+        # dropout
+        inter = self.dropout(inter)
         # prepare the vector for input
         final = rearrange(torch.matmul(inter, v_mat), 'b l h d -> b l (h d)', h = self.num_heads)
 
