@@ -41,7 +41,6 @@ class macdrsi:
     def __init__(self, tickers):
         self.tickers = tickers
 
-
     # for the multimodal processing, we should save the plots as well with names that
     # are identifiable and matchable to the data?
     # our long term data will be found in the plots.
@@ -72,6 +71,8 @@ class macdrsi:
     MACD BASIC STRATEGY
     Buy: 𝑀𝑎𝑐𝑑𝑡−1 < 𝑆𝑖𝑔𝑛𝑎𝑙𝑡−1 & (𝑀𝑎𝑐𝑑𝑡 > 𝑆𝑖𝑔𝑛𝑎𝑙𝑡 & 𝑀𝑎𝑐𝑑𝑡 > 0)
     Sell: 𝑀𝑎𝑐𝑑𝑡−1 > 𝑆𝑖𝑔𝑛𝑎𝑙𝑡−1 & (𝑀𝑎𝑐𝑑𝑡 < 𝑆𝑖𝑔𝑛𝑎𝑙𝑡 & 𝑀𝑎𝑐𝑑𝑡 < 0)
+
+    (This data is for buy classification!)
 
     MACD --> signal crossover AND (∀{𝑅𝑆𝐼𝑡 , 𝑅𝑆𝐼𝑡−1 , 𝑅𝑆𝐼𝑡−2 , 𝑅𝑆𝐼𝑡−3 , 𝑅𝑆𝐼𝑡−4, 𝑅𝑆𝐼𝑡−5 } ≤ 𝐿𝑜𝑤𝑒𝑟 𝑇ℎ𝑟𝑒𝑠ℎ𝑜𝑙𝑑
     so, how would we calculate these statistics on a dataset? 
@@ -127,7 +128,6 @@ class macdrsi:
                     labels = torch.cat((labels, torch.tensor([1, 0]).to(device).view(1, 2)), axis = 0)
         return macd_rsi, labels
 
-
     """
     gather
 
@@ -138,12 +138,10 @@ class macdrsi:
         prep = None
         labels = None
         for tick in self.tickers:
-            print(tick)
             data = torch.load('sp500/' + tick + '.pt').numpy().astype('double')
             close = data[:, 3]
             volume_data = data[:, 4]
             macd, macd_signal, macd_hist = self.extract_macd(close)
-            
             rsi = self.get_rsi(close)
             # our inputs for the model
             macd_rsi, label = self.extract_macd_rsi_data(macd, macd_signal, rsi, tick)
@@ -165,6 +163,5 @@ torch.save(y_data, 'macd_rsi_y_data.pt')
 
 # another thing to consider: 
 # how should volume play a role in our model?
-
 
 # again: This is just focusing on the buy signal.
